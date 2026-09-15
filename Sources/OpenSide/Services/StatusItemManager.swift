@@ -131,7 +131,7 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
 
         // 팝오버 표시 전 최신 뷰 크기 사전 계산 및 적용 (프레임 위쪽 침범 방지)
         if let hostingController = popover.contentViewController as? NSHostingController<MenuBarPopupView> {
-            let fittingSize = hostingController.sizeThatFits(in: NSSize(width: 295, height: CGFloat.greatestFiniteMagnitude))
+            let fittingSize = hostingController.sizeThatFits(in: NSSize(width: 330, height: CGFloat.greatestFiniteMagnitude))
             popover.contentSize = fittingSize
         }
 
@@ -151,7 +151,7 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
             guard let self = self, self.popover.isShown, let button = self.statusItem.button else { return }
 
             if let hostingController = self.popover.contentViewController as? NSHostingController<MenuBarPopupView> {
-                let fittingSize = hostingController.sizeThatFits(in: NSSize(width: 295, height: CGFloat.greatestFiniteMagnitude))
+                let fittingSize = hostingController.sizeThatFits(in: NSSize(width: 330, height: CGFloat.greatestFiniteMagnitude))
                 self.popover.contentSize = fittingSize
             }
 

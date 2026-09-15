@@ -28,6 +28,7 @@ targets:
         LSMinimumSystemVersion: "14.0"
         LSUIElement: true
         NSHighResolutionCapable: true
+        NSHumanReadableCopyright: Copyright © 2026 bldev2473. Licensed under the MIT License.
     entitlements:
       path: OpenSide.entitlements
       properties:

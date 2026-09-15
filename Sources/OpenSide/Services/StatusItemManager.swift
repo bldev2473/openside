@@ -37,11 +37,13 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
     /// 팝오버 속성 및 호스팅 뷰 컨트롤러 초기화
     private func setupPopover() {
         popover.behavior = .transient
-        popover.animates = true
+        popover.animates = false
         popover.delegate = self
-        popover.contentViewController = NSHostingController(
+        let hostingController = NSHostingController(
             rootView: MenuBarPopupView(viewModel: viewModel)
         )
+        hostingController.sizingOptions = [.preferredContentSize]
+        popover.contentViewController = hostingController
     }
 
     /// 메뉴바 버튼 액션 및 마우스 이벤트 감지 설정
@@ -53,12 +55,34 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
     }
 
-    /// 뷰모델 상태 변화 감지하여 메뉴바 아이콘 동적 갱신
+    /// 뷰모델 상태 변화 감지하여 메뉴바 아이콘 동적 갱신 및 팝오버 상단 잘림 방지 재배치
     private func bindViewModel() {
         viewModel.$isSidecarConnected
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isConnected in
                 self?.updateIcon(isConnected: isConnected)
+                self?.repositionPopoverIfNeeded()
+            }
+            .store(in: &cancellables)
+
+        viewModel.$currentResolution
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.repositionPopoverIfNeeded()
+            }
+            .store(in: &cancellables)
+
+        viewModel.$availableResolutions
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.repositionPopoverIfNeeded()
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.repositionPopoverIfNeeded()
             }
             .store(in: &cancellables)
     }
@@ -91,7 +115,7 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
         lastCloseTime = Date.timeIntervalSinceReferenceDate
     }
 
-    /// 좌클릭 시 팝오버 토글
+    /// 좌클릭 시 팝오버 토글 (상단 잘림 방지를 위해 크기 사전 측정 후 표시)
     private func togglePopover() {
         guard let button = statusItem.button else { return }
 
@@ -105,8 +129,49 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
             return
         }
 
+        // 팝오버 표시 전 최신 뷰 크기 사전 계산 및 적용 (프레임 위쪽 침범 방지)
+        if let hostingController = popover.contentViewController as? NSHostingController<MenuBarPopupView> {
+            let fittingSize = hostingController.sizeThatFits(in: NSSize(width: 295, height: CGFloat.greatestFiniteMagnitude))
+            popover.contentSize = fittingSize
+        }
+
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         NSApp.activate(ignoringOtherApps: true)
+
+        DispatchQueue.main.async { [weak self] in
+            self?.clampPopoverWindowWithinScreen()
+        }
+    }
+
+    /// 화면 파라미터 변경, 사이드카 연결 상태 또는 해상도 변경 시 팝오버 크기와 위치를 정밀 재계산하여 상단 잘림 방지
+    private func repositionPopoverIfNeeded() {
+        guard popover.isShown, statusItem.button != nil else { return }
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.popover.isShown, let button = self.statusItem.button else { return }
+
+            if let hostingController = self.popover.contentViewController as? NSHostingController<MenuBarPopupView> {
+                let fittingSize = hostingController.sizeThatFits(in: NSSize(width: 295, height: CGFloat.greatestFiniteMagnitude))
+                self.popover.contentSize = fittingSize
+            }
+
+            self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            self.clampPopoverWindowWithinScreen()
+        }
+    }
+
+    /// 팝오버 윈도우가 상단 메뉴바 위로 튀어나가 잘리는 현상을 물리적으로 방지
+    private func clampPopoverWindowWithinScreen() {
+        guard let window = popover.contentViewController?.view.window,
+              let screen = window.screen ?? NSScreen.main else { return }
+
+        let maxVisibleY = screen.visibleFrame.maxY
+        if window.frame.maxY > maxVisibleY {
+            let offset = window.frame.maxY - maxVisibleY
+            var newOrigin = window.frame.origin
+            newOrigin.y -= offset
+            window.setFrameOrigin(newOrigin)
+        }
     }
 
     /// 우클릭 시 4개 항목(정보, 설정, 언어 설정, OpenSide 종료) 컨텍스트 메뉴 노출

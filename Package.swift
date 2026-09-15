@@ -9,6 +9,11 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
+        // 다른 앱이 의존할 수 있도록 코어를 라이브러리로 노출
+        .library(
+            name: "OpenSideCore",
+            targets: ["OpenSideCore"]
+        ),
         .executable(
             name: "OpenSide",
             targets: ["OpenSide"]
@@ -16,14 +21,19 @@ let package = Package(
     ],
     dependencies: [],
     targets: [
+        .target(
+            name: "OpenSideCore",
+            dependencies: [],
+            path: "Sources/OpenSideCore"
+        ),
         .executableTarget(
             name: "OpenSide",
-            dependencies: [],
+            dependencies: ["OpenSideCore"],
             path: "Sources/OpenSide"
         ),
         .testTarget(
             name: "OpenSideTests",
-            dependencies: ["OpenSide"],
+            dependencies: ["OpenSideCore"],
             path: "Tests/OpenSideTests"
         )
     ]

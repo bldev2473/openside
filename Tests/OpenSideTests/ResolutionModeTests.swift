@@ -1,5 +1,5 @@
 import XCTest
-@testable import OpenSide
+@testable import OpenSideCore
 
 /// 디스플레이 해상도 모델 및 정렬 로직 단위 테스트 클래스
 final class ResolutionModeTests: XCTestCase {

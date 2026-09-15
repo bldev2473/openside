@@ -1,5 +1,5 @@
 import XCTest
-@testable import OpenSide
+@testable import OpenSideCore
 
 /// 디스플레이 정렬 좌표 계산기 단위 테스트 클래스
 final class ArrangementCalculatorTests: XCTestCase {

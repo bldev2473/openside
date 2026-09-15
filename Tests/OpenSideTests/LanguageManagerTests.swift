@@ -1,5 +1,5 @@
 import XCTest
-@testable import OpenSide
+@testable import OpenSideCore
 
 /// 언어 모델 및 언어 관리자 단위 테스트
 final class LanguageManagerTests: XCTestCase {

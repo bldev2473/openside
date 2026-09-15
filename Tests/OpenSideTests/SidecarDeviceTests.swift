@@ -1,5 +1,5 @@
 import XCTest
-@testable import OpenSide
+@testable import OpenSideCore
 
 /// 사이드카 디바이스 모델 및 관리자 단위 테스트 클래스
 final class SidecarDeviceTests: XCTestCase {

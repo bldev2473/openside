@@ -1,5 +1,5 @@
 import XCTest
-@testable import OpenSide
+@testable import OpenSideCore
 
 /// 미니어처 좌표 변환기 단위 테스트 클래스
 final class CoordinateTransformerTests: XCTestCase {

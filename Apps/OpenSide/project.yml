@@ -4,6 +4,10 @@ options:
   deploymentTarget:
     macOS: "14.0"
 
+packages:
+  OpenSideCore:
+    path: ../..
+
 targets:
   OpenSide:
     type: application
@@ -11,6 +15,9 @@ targets:
     deploymentTarget: "14.0"
     sources:
       - path: ../../Sources/OpenSide
+    dependencies:
+      - package: OpenSideCore
+        product: OpenSideCore
     info:
       path: Info.plist
       properties:

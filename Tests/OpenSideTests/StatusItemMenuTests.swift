@@ -1,6 +1,6 @@
 import XCTest
 import AppKit
-@testable import OpenSide
+@testable import OpenSideCore
 
 /// 메뉴바 우클릭 컨텍스트 메뉴 빌더 및 이벤트 핸들링 단위 테스트
 final class StatusItemMenuTests: XCTestCase {

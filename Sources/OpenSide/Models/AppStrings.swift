@@ -16,6 +16,10 @@ public struct LocalizedUIStrings: Sendable {
     public let launchAtLogin: String
     public let languagePicker: String
     public let settingsTitle: String
+    /// iPad 배터리 배지 툴팁. 인자는 마지막 갱신 시각 표기
+    public let iPadBatteryTooltip: @Sendable (String) -> String
+    /// 연결 가능한 사이드카 기기를 찾지 못했을 때 안내
+    public let noSidecarDevices: String
     public let presetLabels: @Sendable (DisplayArrangementPreset) -> String
 }
 
@@ -39,6 +43,8 @@ extension AppLanguage {
                 launchAtLogin: "로그인 시 자동 실행",
                 languagePicker: "언어",
                 settingsTitle: "설정",
+                iPadBatteryTooltip: { "iPad 배터리 · 마지막 갱신 \($0)" },
+                noSidecarDevices: "연결 가능한 기기 없음",
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "상단 중앙"
@@ -68,6 +74,8 @@ extension AppLanguage {
                 launchAtLogin: "Launch at Login",
                 languagePicker: "Language",
                 settingsTitle: "Settings",
+                iPadBatteryTooltip: { "iPad battery · Last updated \($0)" },
+                noSidecarDevices: "No devices available",
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "Top Center"
@@ -97,6 +105,8 @@ extension AppLanguage {
                 launchAtLogin: "ログイン時に自動起動",
                 languagePicker: "言語",
                 settingsTitle: "設定",
+                iPadBatteryTooltip: { "iPad バッテリー · 最終更新 \($0)" },
+                noSidecarDevices: "利用可能なデバイスなし",
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "上中央"
@@ -126,6 +136,8 @@ extension AppLanguage {
                 launchAtLogin: "开机自动启动",
                 languagePicker: "语言",
                 settingsTitle: "设置",
+                iPadBatteryTooltip: { "iPad 电量 · 最后更新 \($0)" },
+                noSidecarDevices: "无可用设备",
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "上中"

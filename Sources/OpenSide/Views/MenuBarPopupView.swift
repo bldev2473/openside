@@ -18,49 +18,38 @@ public struct MenuBarPopupView: View {
 
         VStack(spacing: 12) {
             // 상단 헤더: 타이틀, 연결/해제 버튼, 상태 배지, 새로고침 버튼
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 Text("OpenSide")
                     .font(.system(size: 13, weight: .bold))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
 
-                Spacer()
+                Spacer(minLength: 4)
 
-                if viewModel.isConnecting {
-                    ProgressView()
-                        .controlSize(.small)
-                } else if viewModel.isSidecarConnected {
-                    Button(action: {
-                        viewModel.disconnectSidecar()
-                    }) {
-                        Text(strings.disconnect)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(.red)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.red.opacity(0.1))
-                            .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                } else if let firstDevice = viewModel.availableSidecarDevices.first {
-                    Button(action: {
-                        viewModel.connectSidecar(to: firstDevice)
-                    }) {
-                        HStack(spacing: 3) {
-                            Image(systemName: "link")
-                                .font(.system(size: 9))
-                            Text(strings.connectDevice(firstDevice.name))
+                if viewModel.isSidecarConnected {
+                    if viewModel.isConnecting {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Button(action: {
+                            viewModel.disconnectSidecar()
+                        }) {
+                            Text(strings.disconnect)
                                 .font(.system(size: 10, weight: .medium))
+                                .lineLimit(1)
+                                .foregroundStyle(.red)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.red.opacity(0.1))
+                                .clipShape(Capsule())
                         }
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor.opacity(0.1))
-                        .clipShape(Capsule())
+                        .buttonStyle(.plain)
+                        .fixedSize()
                     }
-                    .buttonStyle(.plain)
                 }
 
-                // 컴패니언 앱에서 iCloud로 동기화된 iPad 배터리
-                if let battery = viewModel.sidecarBattery {
+                // 컴패니언 앱에서 iCloud로 동기화된 iPad 배터리 (Sidecar 연결 중에만 노출)
+                if viewModel.isSidecarConnected, let battery = viewModel.sidecarBattery {
                     HStack(spacing: 2) {
                         Image(systemName: battery.iconName)
                             .font(.system(size: 10))
@@ -69,11 +58,14 @@ public struct MenuBarPopupView: View {
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 5)
+                    .padding(.horizontal, 4)
                     .padding(.vertical, 2)
                     .background(Color(nsColor: .controlBackgroundColor))
                     .clipShape(Capsule())
                     .fixedSize(horizontal: true, vertical: false)
+                    .help(strings.iPadBatteryTooltip(
+                        battery.updatedAt.formatted(date: .abbreviated, time: .shortened)
+                    ))
                 }
 
                 // 사이드카 연결 상태 배지
@@ -84,9 +76,11 @@ public struct MenuBarPopupView: View {
 
                     Text(viewModel.isSidecarConnected ? strings.connected : strings.disconnected)
                         .font(.system(size: 10, weight: .medium))
+                        .lineLimit(1)
                         .foregroundStyle(viewModel.isSidecarConnected ? Color.green : Color.secondary)
                 }
-                .padding(.horizontal, 5)
+                .opacity(viewModel.isSidecarConnected ? 1 : 0.5)
+                .padding(.horizontal, 4)
                 .padding(.vertical, 2)
                 .background(Color(nsColor: .controlBackgroundColor))
                 .clipShape(Capsule())
@@ -168,15 +162,47 @@ public struct MenuBarPopupView: View {
 
             Divider()
 
-            // 정렬 프리셋 그리드
-            PresetButtonGrid(
-                isEnabled: viewModel.isSidecarConnected,
-                selectedPreset: viewModel.lastAppliedPreset,
-                languageManager: languageManager,
-                onSelect: { preset in
-                    viewModel.applyPreset(preset)
+            // 연결 상태에 따라 정렬 프리셋 또는 연결 버튼을 노출
+            if viewModel.isSidecarConnected {
+                PresetButtonGrid(
+                    isEnabled: true,
+                    selectedPreset: viewModel.lastAppliedPreset,
+                    languageManager: languageManager,
+                    onSelect: { preset in
+                        viewModel.applyPreset(preset)
+                    }
+                )
+            } else if viewModel.isConnecting {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+            } else if let firstDevice = viewModel.availableSidecarDevices.first {
+                Button(action: {
+                    viewModel.connectSidecar(to: firstDevice)
+                }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "link")
+                            .font(.system(size: 11))
+                        Text(strings.connectDevice(firstDevice.name))
+                            .font(.system(size: 12, weight: .semibold))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
-            )
+                .buttonStyle(.plain)
+            } else {
+                Text(strings.noSidecarDevices)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+            }
 
             // 오류 메시지 표시
             if let error = viewModel.errorMessage {
@@ -190,19 +216,20 @@ public struct MenuBarPopupView: View {
 
             // 하단 조작 바: 마지막 정렬 적용, 앱 종료
             HStack {
-                Button(action: {
-                    viewModel.applyLastPreset()
-                }) {
-                    Text(strings.rearrange)
-                        .font(.system(size: 11, weight: .medium))
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 10)
-                        .background(Color.accentColor)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                if viewModel.isSidecarConnected {
+                    Button(action: {
+                        viewModel.applyLastPreset()
+                    }) {
+                        Text(strings.rearrange)
+                            .font(.system(size: 11, weight: .medium))
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 10)
+                            .background(Color.accentColor)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 5))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .disabled(!viewModel.isSidecarConnected)
 
                 Spacer()
 
@@ -221,6 +248,6 @@ public struct MenuBarPopupView: View {
             }
         }
         .padding(12)
-        .frame(width: 295)
+        .frame(width: 330)
     }
 }

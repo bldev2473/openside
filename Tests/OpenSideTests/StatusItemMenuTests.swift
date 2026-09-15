@@ -42,9 +42,9 @@ final class StatusItemMenuTests: XCTestCase {
 
         XCTAssertEqual(languageSubmenu.items.count, 4)
         XCTAssertEqual(languageSubmenu.items[0].title, "한국어")
-        XCTAssertEqual(languageSubmenu.items[1].title, "영어")
-        XCTAssertEqual(languageSubmenu.items[2].title, "일본어")
-        XCTAssertEqual(languageSubmenu.items[3].title, "중국어")
+        XCTAssertEqual(languageSubmenu.items[1].title, "English")
+        XCTAssertEqual(languageSubmenu.items[2].title, "日本語")
+        XCTAssertEqual(languageSubmenu.items[3].title, "简体中文")
 
         // 선택된 언어(한국어) 체크마크 상태 검증
         XCTAssertEqual(languageSubmenu.items[0].state, .on)

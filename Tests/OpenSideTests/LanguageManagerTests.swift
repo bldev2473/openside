@@ -4,13 +4,13 @@ import XCTest
 /// 언어 모델 및 언어 관리자 단위 테스트
 final class LanguageManagerTests: XCTestCase {
 
-    /// 4개 지원 언어(한국어, 영어, 일본어, 중국어) 정의 및 표시명 검증
+    /// 4개 지원 언어(한국어, English, 日本語, 简体中文) 고유 명칭(Autonyms) 검증
     func testAppLanguageCasesAndDisplayNames() {
         XCTAssertEqual(AppLanguage.allCases.count, 4)
         XCTAssertEqual(AppLanguage.korean.displayName, "한국어")
-        XCTAssertEqual(AppLanguage.english.displayName, "영어")
-        XCTAssertEqual(AppLanguage.japanese.displayName, "일본어")
-        XCTAssertEqual(AppLanguage.chinese.displayName, "중국어")
+        XCTAssertEqual(AppLanguage.english.displayName, "English")
+        XCTAssertEqual(AppLanguage.japanese.displayName, "日本語")
+        XCTAssertEqual(AppLanguage.chinese.displayName, "简体中文")
     }
 
     /// 언어 변경 및 설정값 저장/조회 검증

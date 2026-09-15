@@ -9,17 +9,17 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
 
     public var id: String { rawValue }
 
-    /// 메뉴 및 UI에 표시될 언어 명칭
+    /// 메뉴 및 UI에 표시될 언어 고유 명칭(Autonyms)
     public var displayName: String {
         switch self {
         case .korean:
             return "한국어"
         case .english:
-            return "영어"
+            return "English"
         case .japanese:
-            return "일본어"
+            return "日本語"
         case .chinese:
-            return "중국어"
+            return "简体中文"
         }
     }
 }

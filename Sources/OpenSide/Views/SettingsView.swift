@@ -30,6 +30,6 @@ public struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 320, height: 180)
+        .frame(width: 360, height: 240)
     }
 }

@@ -1,0 +1,86 @@
+# ==========================================
+# OpenSide .gitignore
+# Swift, macOS, Xcode, Build Artifacts & Credentials
+# ==========================================
+
+# macOS System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+Icon?
+
+# Swift Package Manager & Build Outputs
+.build/
+Packages/
+Package.pins
+.swiftpm/configuration/
+.swiftpm/security/
+
+# Compiled App & Binaries
+*.app/
+*.app
+*.dSYM/
+*.ipa
+*.pkg
+*.dmg
+
+# Xcode & User Configurations
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Fastlane & Tooling Artifacts
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Security, Credentials & Sensitive Files
+*.p12
+*.cer
+*.crt
+*.der
+*.p8
+*.pem
+*.key
+*.mobileprovision
+*.provisionprofile
+*Secrets*
+*secrets*
+*Credentials*
+*credentials*
+*token*
+*Token*
+*id_rsa*
+*id_ed25519*
+.env
+.env.*
+!.env.example
+*.keychain
+*.keychain-db
+
+# Temporary & Editor Files
+*.log
+*.tmp
+*.swp
+*~
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json

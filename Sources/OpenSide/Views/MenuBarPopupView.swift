@@ -3,12 +3,19 @@ import SwiftUI
 /// 메뉴바 팝오버 메인 뷰
 public struct MenuBarPopupView: View {
     @ObservedObject public var viewModel: DisplayManagerViewModel
+    @ObservedObject public var languageManager: UserDefaultsLanguageManager
 
-    public init(viewModel: DisplayManagerViewModel) {
+    public init(
+        viewModel: DisplayManagerViewModel,
+        languageManager: UserDefaultsLanguageManager = .shared
+    ) {
         self.viewModel = viewModel
+        self.languageManager = languageManager
     }
 
     public var body: some View {
+        let strings = languageManager.currentLanguage.strings
+
         VStack(spacing: 12) {
             // 상단 헤더: 타이틀, 연결/해제 버튼, 상태 배지, 새로고침 버튼
             HStack(spacing: 6) {
@@ -24,7 +31,7 @@ public struct MenuBarPopupView: View {
                     Button(action: {
                         viewModel.disconnectSidecar()
                     }) {
-                        Text("연결 해제")
+                        Text(strings.disconnect)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.red)
                             .padding(.horizontal, 6)
@@ -40,7 +47,7 @@ public struct MenuBarPopupView: View {
                         HStack(spacing: 3) {
                             Image(systemName: "link")
                                 .font(.system(size: 9))
-                            Text("\(firstDevice.name) 연결")
+                            Text(strings.connectDevice(firstDevice.name))
                                 .font(.system(size: 10, weight: .medium))
                         }
                         .foregroundStyle(Color.accentColor)
@@ -58,7 +65,7 @@ public struct MenuBarPopupView: View {
                         .fill(viewModel.isSidecarConnected ? Color.green : Color.gray)
                         .frame(width: 6, height: 6)
 
-                    Text(viewModel.isSidecarConnected ? "연결됨" : "연결 안 됨")
+                    Text(viewModel.isSidecarConnected ? strings.connected : strings.disconnected)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(viewModel.isSidecarConnected ? Color.green : Color.secondary)
                 }
@@ -147,6 +154,7 @@ public struct MenuBarPopupView: View {
             PresetButtonGrid(
                 isEnabled: viewModel.isSidecarConnected,
                 selectedPreset: viewModel.lastAppliedPreset,
+                languageManager: languageManager,
                 onSelect: { preset in
                     viewModel.applyPreset(preset)
                 }
@@ -167,7 +175,7 @@ public struct MenuBarPopupView: View {
                 Button(action: {
                     viewModel.applyLastPreset()
                 }) {
-                    Text("재정렬")
+                    Text(strings.rearrange)
                         .font(.system(size: 11, weight: .medium))
                         .padding(.vertical, 4)
                         .padding(.horizontal, 10)
@@ -183,7 +191,7 @@ public struct MenuBarPopupView: View {
                 Button(action: {
                     NSApplication.shared.terminate(nil)
                 }) {
-                    Text("종료")
+                    Text(strings.quit)
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }

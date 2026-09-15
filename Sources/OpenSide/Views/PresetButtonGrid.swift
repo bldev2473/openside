@@ -4,15 +4,18 @@ import SwiftUI
 public struct PresetButtonGrid: View {
     public let isEnabled: Bool
     public let selectedPreset: DisplayArrangementPreset?
+    @ObservedObject public var languageManager: UserDefaultsLanguageManager
     public let onSelect: (DisplayArrangementPreset) -> Void
 
     public init(
         isEnabled: Bool,
         selectedPreset: DisplayArrangementPreset?,
+        languageManager: UserDefaultsLanguageManager = .shared,
         onSelect: @escaping (DisplayArrangementPreset) -> Void
     ) {
         self.isEnabled = isEnabled
         self.selectedPreset = selectedPreset
+        self.languageManager = languageManager
         self.onSelect = onSelect
     }
 
@@ -55,7 +58,7 @@ public struct PresetButtonGrid: View {
             HStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 11))
-                Text(preset.label)
+                Text(languageManager.currentLanguage.strings.presetLabels(preset))
                     .font(.system(size: 11, weight: isSelected ? .bold : .medium))
             }
             .frame(maxWidth: .infinity)

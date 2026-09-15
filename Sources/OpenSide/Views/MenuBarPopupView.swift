@@ -59,6 +59,23 @@ public struct MenuBarPopupView: View {
                     .buttonStyle(.plain)
                 }
 
+                // 컴패니언 앱에서 iCloud로 동기화된 iPad 배터리
+                if let battery = viewModel.sidecarBattery {
+                    HStack(spacing: 2) {
+                        Image(systemName: battery.iconName)
+                            .font(.system(size: 10))
+                            .foregroundStyle(battery.iconColor)
+                        Text("\(battery.percentage)%")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(Capsule())
+                    .fixedSize(horizontal: true, vertical: false)
+                }
+
                 // 사이드카 연결 상태 배지
                 HStack(spacing: 4) {
                     Circle()
@@ -73,6 +90,7 @@ public struct MenuBarPopupView: View {
                 .padding(.vertical, 2)
                 .background(Color(nsColor: .controlBackgroundColor))
                 .clipShape(Capsule())
+                .fixedSize(horizontal: true, vertical: false)
 
                 // 새로고침 버튼
                 Button(action: {
@@ -95,7 +113,7 @@ public struct MenuBarPopupView: View {
 
             // 사이드카 해상도 선택 및 HiDPI 제어
             if let sidecar = viewModel.sidecarDisplay {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Text("Sidecar")
                         .font(.system(size: 11, weight: .medium))
 
@@ -117,7 +135,7 @@ public struct MenuBarPopupView: View {
                             }
                         } label: {
                             HStack(spacing: 3) {
-                                Text("\(Int(sidecar.bounds.width))×\(Int(sidecar.bounds.height))")
+                                Text("\(Int(sidecar.bounds.width)) × \(Int(sidecar.bounds.height))")
                                     .font(.system(size: 11, design: .monospaced))
                                 Image(systemName: "chevron.up.chevron.down")
                                     .font(.system(size: 8))
@@ -192,13 +210,17 @@ public struct MenuBarPopupView: View {
                     NSApplication.shared.terminate(nil)
                 }) {
                     Text(strings.quit)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 11, weight: .medium))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 10)
+                        .background(Color.red)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(12)
-        .frame(width: 280)
+        .frame(width: 295)
     }
 }

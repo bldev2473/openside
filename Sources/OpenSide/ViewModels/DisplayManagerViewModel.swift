@@ -16,6 +16,7 @@ public final class DisplayManagerViewModel: ObservableObject {
     @Published public private(set) var isCurrentResolutionHiDPI: Bool = false
     @Published public private(set) var canToggleHiDPI: Bool = false
     @Published public private(set) var availableSidecarDevices: [SidecarDeviceInfo] = []
+    @Published public private(set) var sidecarBattery: SidecarBatteryInfo?
     @Published public private(set) var isConnecting: Bool = false
     @Published public var errorMessage: String?
 
@@ -25,6 +26,7 @@ public final class DisplayManagerViewModel: ObservableObject {
     private let presetManager: PresetManaging
     private let modeManager: DisplayModeManaging
     private let sidecarConnector: SidecarConnecting
+    private let batteryReceiver: BatteryReceiving?
 
     private var screenNotificationObserver: NSObjectProtocol?
 
@@ -34,7 +36,8 @@ public final class DisplayManagerViewModel: ObservableObject {
         configurator: DisplayConfiguring = CoreGraphicsDisplayConfigurator(),
         presetManager: PresetManaging = UserDefaultsPresetManager(),
         modeManager: DisplayModeManaging = CoreGraphicsDisplayModeManager(),
-        sidecarConnector: SidecarConnecting = SidecarDeviceManager()
+        sidecarConnector: SidecarConnecting = SidecarDeviceManager(),
+        batteryReceiver: BatteryReceiving? = CloudBatteryReceiver.shared
     ) {
         self.detector = detector
         self.calculator = calculator
@@ -42,16 +45,29 @@ public final class DisplayManagerViewModel: ObservableObject {
         self.presetManager = presetManager
         self.modeManager = modeManager
         self.sidecarConnector = sidecarConnector
+        self.batteryReceiver = batteryReceiver
         self.lastAppliedPreset = presetManager.loadLastPreset()
 
+        setupBatteryReceiver()
         refreshDisplays()
         setupScreenChangeObserver()
     }
 
     deinit {
+        batteryReceiver?.stopListening()
         if let observer = screenNotificationObserver {
             NotificationCenter.default.removeObserver(observer)
         }
+    }
+
+    /// 배터리 수신 서비스 리스너 등록 및 데이터 바인딩
+    private func setupBatteryReceiver() {
+        batteryReceiver?.onBatteryUpdate = { [weak self] battery in
+            Task { @MainActor [weak self] in
+                self?.sidecarBattery = battery
+            }
+        }
+        batteryReceiver?.startListening()
     }
 
     /// 화면 변경 이벤트 감지 리스너 등록

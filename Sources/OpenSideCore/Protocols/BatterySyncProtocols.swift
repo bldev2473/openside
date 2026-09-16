@@ -2,8 +2,9 @@ import Foundation
 
 /// 사이드카 배터리 정보 수신 인터페이스
 public protocol BatteryReceiving: AnyObject {
-    /// 배터리 정보 수신 시 호출될 콜백 클로저
-    var onBatteryUpdate: ((SidecarBatteryInfo) -> Void)? { get set }
+    /// 배터리 정보 수신 시 호출될 콜백 클로저.
+    /// iPad 를 더 이상 읽을 수 없으면 nil 을 넘긴다. 그래야 화면이 옛 값을 계속 보여주지 않는다.
+    var onBatteryUpdate: ((SidecarBatteryInfo?) -> Void)? { get set }
 
     /// 배터리 정보 수신 서비스 시작
     func startListening()

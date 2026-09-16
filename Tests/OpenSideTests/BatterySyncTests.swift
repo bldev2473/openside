@@ -39,7 +39,7 @@ final class BatterySyncTests: XCTestCase {
     @MainActor
     func testDisplayManagerViewModelBatteryBinding() async {
         class MockBatteryReceiver: BatteryReceiving {
-            var onBatteryUpdate: ((SidecarBatteryInfo) -> Void)?
+            var onBatteryUpdate: ((SidecarBatteryInfo?) -> Void)?
             var isListening: Bool = false
 
             func startListening() {
@@ -64,5 +64,39 @@ final class BatterySyncTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertEqual(viewModel.sidecarBattery?.percentage, 90)
         XCTAssertEqual(viewModel.sidecarBattery?.state, .full)
+    }
+}
+
+final class BatteryLossTests: XCTestCase {
+
+    final class ManualBatterySource: BatteryReceiving, @unchecked Sendable {
+        var onBatteryUpdate: ((SidecarBatteryInfo?) -> Void)?
+        func startListening() {}
+        func stopListening() {}
+    }
+
+    final class ConstantEstimator: RemainingTimeEstimating, @unchecked Sendable {
+        func estimatedRemaining(currentBattery: Int) -> TimeInterval? { 3600 }
+    }
+
+    /// iPad 를 더 이상 읽을 수 없으면 배지와 추정을 함께 비워야 한다.
+    /// 마지막 성공값이 남으면 사용자가 그것을 현재 잔량으로 읽는다.
+    @MainActor
+    func testLosingTheDeviceClearsBatteryAndEstimate() async {
+        let source = ManualBatterySource()
+        let viewModel = DisplayManagerViewModel(
+            batteryReceiver: source,
+            remainingTimeEstimator: ConstantEstimator()
+        )
+
+        source.onBatteryUpdate?(SidecarBatteryInfo(percentage: 42, state: .unplugged))
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertEqual(viewModel.sidecarBattery?.percentage, 42)
+        XCTAssertEqual(viewModel.remainingEstimate, 3600)
+
+        source.onBatteryUpdate?(nil)
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertNil(viewModel.sidecarBattery, "기기가 사라지면 배지도 사라져야 한다")
+        XCTAssertNil(viewModel.remainingEstimate, "읽을 수 없으면 추정도 의미가 없다")
     }
 }

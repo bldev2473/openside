@@ -78,6 +78,12 @@ public final class DisplayManagerViewModel: ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.sidecarBattery = battery
+
+                // iPad 를 못 읽으면 추정도 의미가 없다.
+                guard let battery else {
+                    self.remainingEstimate = nil
+                    return
+                }
                 // 기록이 쌓이면서 추정이 달라지므로 값을 받을 때마다 다시 계산합니다.
                 self.remainingEstimate = self.remainingTimeEstimator?
                     .estimatedRemaining(currentBattery: battery.percentage)

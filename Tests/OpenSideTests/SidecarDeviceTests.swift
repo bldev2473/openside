@@ -178,6 +178,44 @@ final class UserDefaultsPresetManagerTests: XCTestCase {
     }
 }
 
+final class DeviceListRefreshTests: XCTestCase {
+
+    final class CountingConnector: SidecarConnecting, @unchecked Sendable {
+        var devices: [SidecarDeviceInfo] = []
+        var listCalls = 0
+        func getAvailableDevices() -> [SidecarDeviceInfo] {
+            listCalls += 1
+            return devices
+        }
+        func connect(to device: SidecarDeviceInfo, completion: @escaping @Sendable (Result<Void, Error>) -> Void) {}
+        func disconnect(completion: @escaping @Sendable (Result<Void, Error>) -> Void) {}
+    }
+
+    final class CountingDetector: DisplayDetecting, @unchecked Sendable {
+        var displayCalls = 0
+        func getActiveDisplays() -> [DisplayInfo] { displayCalls += 1; return [] }
+        func getSidecarDisplay() -> DisplayInfo? { nil }
+        func getMainDisplay() -> DisplayInfo? { nil }
+    }
+
+    /// 배경에서 자주 부르는 경로다. 기기 목록만 읽고 화면은 건드리지 않아야 한다.
+    @MainActor
+    func testRefreshingDevicesDoesNotTouchDisplays() {
+        let connector = CountingConnector()
+        let detector = CountingDetector()
+        let viewModel = DisplayManagerViewModel(detector: detector, sidecarConnector: connector)
+
+        let displayCallsAfterInit = detector.displayCalls
+        let device = SidecarDeviceInfo(id: "A", name: "iPad", isConnected: false)
+        connector.devices = [device]
+
+        viewModel.refreshSidecarDevices()
+
+        XCTAssertEqual(viewModel.availableSidecarDevices, [device])
+        XCTAssertEqual(detector.displayCalls, displayCallsAfterInit, "화면 열거를 다시 하지 않는다")
+    }
+}
+
 final class ConnectFailureTests: XCTestCase {
 
     struct StubDetector: DisplayDetecting {

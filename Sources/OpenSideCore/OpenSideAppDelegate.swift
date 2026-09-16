@@ -3,9 +3,14 @@ import AppKit
 
 /// OpenSide 애플리케이션 수명 주기 및 메뉴바 관리 대리자
 @MainActor
-public final class OpenSideAppDelegate: NSObject, NSApplicationDelegate, MenuBarMenuHandling {
+open class OpenSideAppDelegate: NSObject, NSApplicationDelegate, MenuBarMenuHandling {
     private var statusItemManager: StatusItemManager?
-    public let viewModel = DisplayManagerViewModel()
+    public private(set) lazy var viewModel: DisplayManagerViewModel = makeViewModel()
+
+    /// 뷰모델 생성 지점. 이 라이브러리를 쓰는 앱이 배터리 조회 같은 구현체를 넣으려면 재정의합니다.
+    open func makeViewModel() -> DisplayManagerViewModel {
+        DisplayManagerViewModel()
+    }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         statusItemManager = StatusItemManager(viewModel: viewModel, menuHandler: self)

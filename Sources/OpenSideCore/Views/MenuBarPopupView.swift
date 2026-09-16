@@ -33,11 +33,6 @@ public struct MenuBarPopupView: View {
 
                 Spacer(minLength: 4)
 
-                if viewModel.isConnecting {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-
                 // iPad 배터리와 남은 시간 추정 (Sidecar 연결 중에만 노출)
                 if viewModel.isSidecarConnected, let battery = viewModel.sidecarBattery {
                     HStack(spacing: 2) {
@@ -173,18 +168,21 @@ public struct MenuBarPopupView: View {
                         viewModel.applyPreset(preset)
                     }
                 )
-            } else if viewModel.isConnecting {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
             } else if let firstDevice = viewModel.availableSidecarDevices.first {
                 Button(action: {
                     viewModel.connectSidecar(to: firstDevice)
                 }) {
                     HStack(spacing: 5) {
-                        Image(systemName: "link")
-                            .font(.system(size: 11))
+                        // 진행 표시를 버튼 안에 둔다. 누른 자리에서 상태가 보이고,
+                        // 버튼이 사라졌다 돌아오지 않아 목록이 흔들리지 않는다.
+                        if viewModel.isConnecting {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "link")
+                                .font(.system(size: 11))
+                        }
                         Text(strings.connectDevice(firstDevice.name))
                             .font(.system(size: 12, weight: .semibold))
                             .lineLimit(1)
@@ -217,6 +215,7 @@ public struct MenuBarPopupView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
+                .disabled(viewModel.isConnecting)
             } else {
                 Text(strings.noSidecarDevices)
                     .font(.system(size: 11))
@@ -295,15 +294,23 @@ public struct MenuBarPopupView: View {
                     Button(action: {
                         viewModel.disconnectSidecar()
                     }) {
-                        Text(strings.disconnect)
-                            .font(.system(size: 11, weight: .medium))
-                            .padding(.vertical, 4)
-                            .padding(.horizontal, 10)
-                            .background(Color.red.opacity(0.75))
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 5))
+                        HStack(spacing: 4) {
+                            if viewModel.isConnecting {
+                                ProgressView()
+                                    .controlSize(.mini)
+                                    .tint(.white)
+                            }
+                            Text(strings.disconnect)
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 10)
+                        .background(Color.red.opacity(0.75))
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
                     }
                     .buttonStyle(.plain)
+                    .disabled(viewModel.isConnecting)
                 }
 
                 Button(action: {

@@ -26,26 +26,9 @@ public struct MenuBarPopupView: View {
 
                 Spacer(minLength: 4)
 
-                if viewModel.isSidecarConnected {
-                    if viewModel.isConnecting {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Button(action: {
-                            viewModel.disconnectSidecar()
-                        }) {
-                            Text(strings.disconnect)
-                                .font(.system(size: 10, weight: .medium))
-                                .lineLimit(1)
-                                .foregroundStyle(.red)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.red.opacity(0.1))
-                                .clipShape(Capsule())
-                        }
-                        .buttonStyle(.plain)
-                        .fixedSize()
-                    }
+                if viewModel.isConnecting {
+                    ProgressView()
+                        .controlSize(.small)
                 }
 
                 // 컴패니언 앱에서 iCloud로 동기화된 iPad 배터리 (Sidecar 연결 중에만 노출)
@@ -214,8 +197,8 @@ public struct MenuBarPopupView: View {
 
             Divider()
 
-            // 하단 조작 바: 마지막 정렬 적용, 앱 종료
-            HStack {
+            // 하단 조작 바: 마지막 정렬 적용, 연결 해제, 앱 종료
+            HStack(spacing: 8) {
                 if viewModel.isSidecarConnected {
                     Button(action: {
                         viewModel.applyLastPreset()
@@ -232,6 +215,21 @@ public struct MenuBarPopupView: View {
                 }
 
                 Spacer()
+
+                if viewModel.isSidecarConnected {
+                    Button(action: {
+                        viewModel.disconnectSidecar()
+                    }) {
+                        Text(strings.disconnect)
+                            .font(.system(size: 11, weight: .medium))
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 10)
+                            .background(Color.red.opacity(0.75))
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 5))
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 Button(action: {
                     NSApplication.shared.terminate(nil)

@@ -2,6 +2,13 @@ import SwiftUI
 
 /// 메뉴바 팝오버 메인 뷰
 public struct MenuBarPopupView: View {
+    /// 초를 사람이 읽는 길이로. 지역에 맞는 표기를 시스템에 맡긴다.
+    static func durationText(_ seconds: TimeInterval) -> String {
+        Duration.seconds(seconds).formatted(
+            .units(allowed: [.hours, .minutes], width: .narrow)
+        )
+    }
+
     @ObservedObject public var viewModel: DisplayManagerViewModel
     @ObservedObject public var languageManager: UserDefaultsLanguageManager
 
@@ -31,7 +38,7 @@ public struct MenuBarPopupView: View {
                         .controlSize(.small)
                 }
 
-                // 컴패니언 앱에서 iCloud로 동기화된 iPad 배터리 (Sidecar 연결 중에만 노출)
+                // iPad 배터리와 남은 시간 추정 (Sidecar 연결 중에만 노출)
                 if viewModel.isSidecarConnected, let battery = viewModel.sidecarBattery {
                     HStack(spacing: 2) {
                         Image(systemName: battery.iconName)
@@ -40,6 +47,15 @@ public struct MenuBarPopupView: View {
                         Text("\(battery.percentage)%")
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(.secondary)
+
+                        if let remaining = viewModel.remainingEstimate {
+                            Text(verbatim: "·")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                            Text(strings.approximateRemaining(Self.durationText(remaining)))
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
@@ -182,6 +198,14 @@ public struct MenuBarPopupView: View {
                                     .font(.system(size: 10))
                                 Text("\(battery.percentage)%")
                                     .font(.system(size: 10, weight: .medium, design: .monospaced))
+
+                                if let remaining = viewModel.remainingEstimate {
+                                    Text(verbatim: "·")
+                                        .font(.system(size: 10))
+                                        .opacity(0.6)
+                                    Text(Self.durationText(remaining))
+                                        .font(.system(size: 10))
+                                }
                             }
                             .padding(.trailing, 10)
                         }

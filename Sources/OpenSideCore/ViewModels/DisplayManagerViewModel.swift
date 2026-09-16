@@ -19,6 +19,8 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 기기를 찾지 못했을 때 Mac 쪽에서 확인된 원인. 기기가 있으면 비어 있습니다.
     @Published public private(set) var readinessIssues: [SidecarReadinessIssue] = []
     @Published public private(set) var sidecarBattery: SidecarBatteryInfo?
+    /// 현재 잔량으로 더 쓸 수 있는 시간(초). 추정 구현체가 없거나 표본이 모자라면 nil.
+    @Published public private(set) var remainingEstimate: TimeInterval?
     @Published public private(set) var isConnecting: Bool = false
     @Published public var errorMessage: String?
 
@@ -30,6 +32,7 @@ public final class DisplayManagerViewModel: ObservableObject {
     private let sidecarConnector: SidecarConnecting
     private let readinessChecker: SidecarReadinessChecking
     private let batteryReceiver: BatteryReceiving?
+    private let remainingTimeEstimator: RemainingTimeEstimating?
 
     private var screenNotificationObserver: NSObjectProtocol?
 
@@ -42,7 +45,9 @@ public final class DisplayManagerViewModel: ObservableObject {
         sidecarConnector: SidecarConnecting = SidecarDeviceManager(),
         readinessChecker: SidecarReadinessChecking = SystemSidecarReadinessChecker(),
         // 배터리 조회 구현체는 쓰는 앱이 넣습니다. 안 넣으면 배지가 표시되지 않습니다.
-        batteryReceiver: BatteryReceiving? = nil
+        batteryReceiver: BatteryReceiving? = nil,
+        // 남은 시간 추정도 쓰는 앱이 넣습니다.
+        remainingTimeEstimator: RemainingTimeEstimating? = nil
     ) {
         self.detector = detector
         self.calculator = calculator
@@ -52,6 +57,7 @@ public final class DisplayManagerViewModel: ObservableObject {
         self.sidecarConnector = sidecarConnector
         self.readinessChecker = readinessChecker
         self.batteryReceiver = batteryReceiver
+        self.remainingTimeEstimator = remainingTimeEstimator
         self.lastAppliedPreset = presetManager.loadLastPreset()
 
         setupBatteryReceiver()
@@ -70,7 +76,11 @@ public final class DisplayManagerViewModel: ObservableObject {
     private func setupBatteryReceiver() {
         batteryReceiver?.onBatteryUpdate = { [weak self] battery in
             Task { @MainActor [weak self] in
-                self?.sidecarBattery = battery
+                guard let self else { return }
+                self.sidecarBattery = battery
+                // 기록이 쌓이면서 추정이 달라지므로 값을 받을 때마다 다시 계산합니다.
+                self.remainingEstimate = self.remainingTimeEstimator?
+                    .estimatedRemaining(currentBattery: battery.percentage)
             }
         }
         batteryReceiver?.startListening()

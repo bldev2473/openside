@@ -20,6 +20,8 @@ public struct LocalizedUIStrings: Sendable {
     public let iPadBatteryTooltip: @Sendable (String) -> String
     /// 연결 가능한 사이드카 기기를 찾지 못했을 때 안내
     public let noSidecarDevices: String
+    /// 남은 사용 시간 추정. 인자는 시간 표기
+    public let approximateRemaining: @Sendable (String) -> String
     /// 기기를 찾지 못한 원인 안내
     public let readinessHint: @Sendable (SidecarReadinessIssue) -> String
     /// 전제 조건 활성화를 권하는 안내 문구
@@ -49,6 +51,7 @@ extension AppLanguage {
                 settingsTitle: "설정",
                 iPadBatteryTooltip: { "iPad 배터리 · 마지막 갱신 \($0)" },
                 noSidecarDevices: "연결 가능한 기기 없음",
+                approximateRemaining: { "약 \($0)" },
                 readinessHint: { issue in
                     switch issue {
                     case .wifiOff: return "이 Mac의 Wi-Fi가 꺼져 있습니다"
@@ -87,6 +90,7 @@ extension AppLanguage {
                 settingsTitle: "Settings",
                 iPadBatteryTooltip: { "iPad battery · Last updated \($0)" },
                 noSidecarDevices: "No devices available",
+                approximateRemaining: { "about \($0)" },
                 readinessHint: { issue in
                     switch issue {
                     case .wifiOff: return "Wi-Fi is off on this Mac"
@@ -125,6 +129,7 @@ extension AppLanguage {
                 settingsTitle: "設定",
                 iPadBatteryTooltip: { "iPad バッテリー · 最終更新 \($0)" },
                 noSidecarDevices: "利用可能なデバイスなし",
+                approximateRemaining: { "約 \($0)" },
                 readinessHint: { issue in
                     switch issue {
                     case .wifiOff: return "この Mac の Wi-Fi がオフです"
@@ -163,6 +168,7 @@ extension AppLanguage {
                 settingsTitle: "设置",
                 iPadBatteryTooltip: { "iPad 电量 · 最后更新 \($0)" },
                 noSidecarDevices: "无可用设备",
+                approximateRemaining: { "约 \($0)" },
                 readinessHint: { issue in
                     switch issue {
                     case .wifiOff: return "此 Mac 的 Wi-Fi 已关闭"

@@ -107,7 +107,7 @@ public struct MenuBarPopupView: View {
             // 사이드카 해상도 선택 및 HiDPI 제어
             if let sidecar = viewModel.sidecarDisplay {
                 HStack(spacing: 6) {
-                    Text("Sidecar")
+                    Text(strings.resolution)
                         .font(.system(size: 11, weight: .medium))
 
                     Spacer()
@@ -136,6 +136,8 @@ public struct MenuBarPopupView: View {
                             .foregroundStyle(Color.accentColor)
                         }
                         .menuStyle(.borderlessButton)
+                        // SwiftUI 가 표시기를 하나 더 그린다. 위 라벨의 chevron 만 남긴다.
+                        .menuIndicator(.hidden)
                         .fixedSize()
                     }
 

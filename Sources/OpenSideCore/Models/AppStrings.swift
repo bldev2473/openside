@@ -20,6 +20,8 @@ public struct LocalizedUIStrings: Sendable {
     public let iPadBatteryTooltip: @Sendable (String) -> String
     /// 연결 가능한 사이드카 기기를 찾지 못했을 때 안내
     public let noSidecarDevices: String
+    /// 해상도 행 제목
+    public let resolution: String
     /// 남은 사용 시간 추정. 인자는 시간 표기
     public let approximateRemaining: @Sendable (String) -> String
     /// 기기를 찾지 못한 원인 안내
@@ -51,6 +53,7 @@ extension AppLanguage {
                 settingsTitle: "설정",
                 iPadBatteryTooltip: { "iPad 배터리 · 마지막 갱신 \($0)" },
                 noSidecarDevices: "연결 가능한 기기 없음",
+                resolution: "해상도",
                 approximateRemaining: { "약 \($0)" },
                 readinessHint: { issue in
                     switch issue {
@@ -90,6 +93,7 @@ extension AppLanguage {
                 settingsTitle: "Settings",
                 iPadBatteryTooltip: { "iPad battery · Last updated \($0)" },
                 noSidecarDevices: "No devices available",
+                resolution: "Resolution",
                 approximateRemaining: { "about \($0)" },
                 readinessHint: { issue in
                     switch issue {
@@ -129,6 +133,7 @@ extension AppLanguage {
                 settingsTitle: "設定",
                 iPadBatteryTooltip: { "iPad バッテリー · 最終更新 \($0)" },
                 noSidecarDevices: "利用可能なデバイスなし",
+                resolution: "解像度",
                 approximateRemaining: { "約 \($0)" },
                 readinessHint: { issue in
                     switch issue {
@@ -168,6 +173,7 @@ extension AppLanguage {
                 settingsTitle: "设置",
                 iPadBatteryTooltip: { "iPad 电量 · 最后更新 \($0)" },
                 noSidecarDevices: "无可用设备",
+                resolution: "分辨率",
                 approximateRemaining: { "约 \($0)" },
                 readinessHint: { issue in
                     switch issue {

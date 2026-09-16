@@ -12,7 +12,7 @@ open class OpenSideAppDelegate: NSObject, NSApplicationDelegate, MenuBarMenuHand
         DisplayManagerViewModel()
     }
 
-    public func applicationDidFinishLaunching(_ notification: Notification) {
+    open func applicationDidFinishLaunching(_ notification: Notification) {
         statusItemManager = StatusItemManager(viewModel: viewModel, menuHandler: self)
     }
 

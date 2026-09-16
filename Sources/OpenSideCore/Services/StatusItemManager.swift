@@ -129,6 +129,10 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
             return
         }
 
+        // 팝오버가 닫혀 있는 동안 디스플레이 구성이나 시스템 설정이 바뀌었을 수 있으므로
+        // 열기 직전에 상태를 다시 읽는다. 사용자가 새로고침을 누를 필요가 없도록.
+        viewModel.refreshDisplays()
+
         // 팝오버 표시 전 최신 뷰 크기 사전 계산 및 적용 (프레임 위쪽 침범 방지)
         if let hostingController = popover.contentViewController as? NSHostingController<MenuBarPopupView> {
             let fittingSize = hostingController.sizeThatFits(in: NSSize(width: 330, height: CGFloat.greatestFiniteMagnitude))

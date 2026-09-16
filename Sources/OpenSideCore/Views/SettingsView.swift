@@ -1,12 +1,21 @@
 import SwiftUI
 
 /// 환경설정 창 뷰
-public struct SettingsView: View {
+///
+/// 쓰는 앱이 자체 섹션을 덧붙일 수 있도록 `extraSections` 를 받습니다.
+/// 이 앱에서는 비어 있습니다.
+public struct SettingsView<Extra: View>: View {
     @ObservedObject public var languageManager: UserDefaultsLanguageManager
     @AppStorage("launchAtLogin") private var launchAtLogin: Bool = false
 
-    public init(languageManager: UserDefaultsLanguageManager = .shared) {
+    private let extraSections: Extra
+
+    public init(
+        languageManager: UserDefaultsLanguageManager = .shared,
+        @ViewBuilder extraSections: () -> Extra
+    ) {
         self.languageManager = languageManager
+        self.extraSections = extraSections()
     }
 
     public var body: some View {
@@ -28,8 +37,19 @@ public struct SettingsView: View {
                 }
                 .pickerStyle(.menu)
             }
+
+            extraSections
         }
         .formStyle(.grouped)
-        .frame(width: 360, height: 240)
+        // 섹션이 늘어날 수 있으므로 높이는 고정하지 않습니다.
+        .frame(width: 360)
+        .frame(minHeight: 240)
+    }
+}
+
+extension SettingsView where Extra == EmptyView {
+    /// 추가 섹션이 없는 기본 설정 창
+    public init(languageManager: UserDefaultsLanguageManager = .shared) {
+        self.init(languageManager: languageManager) { EmptyView() }
     }
 }

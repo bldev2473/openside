@@ -174,6 +174,18 @@ public struct MenuBarPopupView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
+                    // 연결 전에도 잔량을 보여준다. 지금 붙일지 충전부터 할지 여기서 판단한다.
+                    .overlay(alignment: .trailing) {
+                        if let battery = viewModel.sidecarBattery {
+                            HStack(spacing: 2) {
+                                Image(systemName: battery.iconName)
+                                    .font(.system(size: 10))
+                                Text("\(battery.percentage)%")
+                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            }
+                            .padding(.trailing, 10)
+                        }
+                    }
                     .background(Color.accentColor)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 6))

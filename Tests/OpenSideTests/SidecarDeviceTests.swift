@@ -95,3 +95,85 @@ final class SidecarReadinessSettingsURLTests: XCTestCase {
         }
     }
 }
+
+final class CustomArrangementPersistenceTests: XCTestCase {
+
+    final class SpyPresetManager: PresetManaging, @unchecked Sendable {
+        var stored: DisplayArrangementPreset?
+        func saveLastPreset(_ preset: DisplayArrangementPreset) { stored = preset }
+        func loadLastPreset() -> DisplayArrangementPreset? { stored }
+        func clearLastPreset() { stored = nil }
+    }
+
+    final class StubDetector: DisplayDetecting, @unchecked Sendable {
+        let sidecar = DisplayInfo(
+            id: 1, uuid: "TEST-SIDECAR", name: "Sidecar Display (AirPlay)",
+            bounds: CGRect(x: 0, y: 0, width: 1112, height: 834),
+            isMain: false, isBuiltin: false, isSidecar: true
+        )
+        let main = DisplayInfo(
+            id: 99, uuid: "TEST-MAIN", name: "Built-in",
+            bounds: CGRect(x: 0, y: 0, width: 1728, height: 1117),
+            isMain: true, isBuiltin: true, isSidecar: false
+        )
+        func getActiveDisplays() -> [DisplayInfo] { [main, sidecar] }
+        func getSidecarDisplay() -> DisplayInfo? { sidecar }
+        func getMainDisplay() -> DisplayInfo? { main }
+    }
+
+    struct NoopConfigurator: DisplayConfiguring {
+        func configureDisplayOrigin(
+            displayID: CGDirectDisplayID,
+            origin: TargetDisplayOrigin
+        ) -> Result<Void, DisplayConfigurationError> { .success(()) }
+    }
+
+    /// 프리셋을 적용한 뒤 직접 끌어다 놓으면, 저장된 프리셋도 지워져야 한다.
+    /// 메모리만 지우면 앱을 다시 켰을 때 지운 줄 알았던 프리셋이 선택된 채로 살아난다.
+    @MainActor
+    func testDraggingClearsTheStoredPreset() {
+        let presets = SpyPresetManager()
+        let viewModel = DisplayManagerViewModel(
+            detector: StubDetector(),
+            configurator: NoopConfigurator(),
+            presetManager: presets
+        )
+
+        viewModel.applyPreset(.rightCenter)
+        XCTAssertEqual(presets.stored, .rightCenter)
+
+        viewModel.applyCustomOrigin(TargetDisplayOrigin(x: 100, y: 200))
+        XCTAssertNil(viewModel.lastAppliedPreset, "화면에서 선택 표시가 사라져야 한다")
+        XCTAssertNil(presets.stored, "저장소에도 남으면 다음 실행에서 되살아난다")
+
+        // 다시 켠 상황을 흉내 낸다.
+        let restarted = DisplayManagerViewModel(
+            detector: StubDetector(),
+            configurator: NoopConfigurator(),
+            presetManager: presets
+        )
+        XCTAssertNil(restarted.lastAppliedPreset)
+    }
+}
+
+final class UserDefaultsPresetManagerTests: XCTestCase {
+
+    /// 대역이 아니라 실제 저장소 구현이 지우는지 확인한다.
+    func testClearRemovesTheStoredValue() throws {
+        let suiteName = "OpenSideTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let manager = UserDefaultsPresetManager(userDefaults: defaults)
+
+        manager.saveLastPreset(.rightCenter)
+        XCTAssertEqual(manager.loadLastPreset(), .rightCenter)
+
+        manager.clearLastPreset()
+        XCTAssertNil(manager.loadLastPreset(), "저장소에서 실제로 없어져야 한다")
+
+        // 같은 저장소를 새로 열어도 없어야 한다. 앱 재시작에 해당한다.
+        let reopened = UserDefaultsPresetManager(userDefaults: try XCTUnwrap(UserDefaults(suiteName: suiteName)))
+        XCTAssertNil(reopened.loadLastPreset())
+    }
+}

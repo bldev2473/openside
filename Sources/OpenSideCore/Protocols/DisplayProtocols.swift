@@ -70,6 +70,9 @@ public protocol PresetManaging: Sendable {
 
     /// 저장된 마지막 프리셋을 반환합니다.
     func loadLastPreset() -> DisplayArrangementPreset?
+
+    /// 저장된 프리셋을 지웁니다. 사용자가 프리셋 대신 직접 끌어다 놓았을 때 호출합니다.
+    func clearLastPreset()
 }
 
 /// 미니어처 캔버스 드래그 좌표를 글로벌 시스템 좌표로 변환하는 인터페이스

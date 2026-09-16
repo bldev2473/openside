@@ -19,4 +19,8 @@ public struct UserDefaultsPresetManager: @unchecked Sendable, PresetManaging {
         }
         return DisplayArrangementPreset(rawValue: rawValue)
     }
+
+    public func clearLastPreset() {
+        userDefaults.removeObject(forKey: lastPresetKey)
+    }
 }

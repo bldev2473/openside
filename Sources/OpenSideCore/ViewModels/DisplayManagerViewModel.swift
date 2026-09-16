@@ -268,7 +268,9 @@ public final class DisplayManagerViewModel: ObservableObject {
 
         switch result {
         case .success:
+            // 저장소도 같이 비운다. 메모리만 지우면 다음 실행에서 옛 프리셋이 되살아난다.
             self.lastAppliedPreset = nil
+            self.presetManager.clearLastPreset()
             self.errorMessage = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                 self?.refreshDisplays()

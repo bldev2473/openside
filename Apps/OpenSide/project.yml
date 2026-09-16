@@ -29,10 +29,6 @@ targets:
         LSUIElement: true
         NSHighResolutionCapable: true
         NSHumanReadableCopyright: Copyright © 2026 bldev2473. Licensed under the MIT License.
-    entitlements:
-      path: OpenSide.entitlements
-      properties:
-        com.apple.developer.ubiquity-kvstore-identifier: $(TeamIdentifierPrefix)org.openside.shared
     configFiles:
       Debug: Local.xcconfig
       Release: Local.xcconfig

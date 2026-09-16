@@ -36,50 +36,6 @@ final class BatterySyncTests: XCTestCase {
         XCTAssertEqual(decoded.isCharging, original.isCharging)
     }
 
-    final class FakeKeyValueStore: KeyValueStoring {
-        private var storage: [String: Data] = [:]
-
-        func data(forKey key: String) -> Data? {
-            storage[key]
-        }
-
-        func set(_ data: Data?, forKey key: String) {
-            storage[key] = data
-        }
-
-        func synchronize() -> Bool { true }
-    }
-
-    func testCloudBatteryReceiverDecodesStoredValue() throws {
-        let store = FakeKeyValueStore()
-        let receiver = CloudBatteryReceiver(store: store)
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        let stored = SidecarBatteryInfo(percentage: 64, state: .unplugged)
-        store.set(try encoder.encode(stored), forKey: CloudBatteryReceiver.batteryKey)
-
-        var received: SidecarBatteryInfo?
-        receiver.onBatteryUpdate = { received = $0 }
-        receiver.startListening()
-
-        XCTAssertEqual(received?.percentage, 64)
-        XCTAssertEqual(received?.state, .unplugged)
-
-        receiver.stopListening()
-    }
-
-    func testCloudBatteryReceiverIgnoresEmptyStore() {
-        let receiver = CloudBatteryReceiver(store: FakeKeyValueStore())
-
-        var received: SidecarBatteryInfo?
-        receiver.onBatteryUpdate = { received = $0 }
-        receiver.startListening()
-
-        XCTAssertNil(received)
-        receiver.stopListening()
-    }
-
     @MainActor
     func testDisplayManagerViewModelBatteryBinding() async {
         class MockBatteryReceiver: BatteryReceiving {

@@ -37,7 +37,8 @@ public final class DisplayManagerViewModel: ObservableObject {
         presetManager: PresetManaging = UserDefaultsPresetManager(),
         modeManager: DisplayModeManaging = CoreGraphicsDisplayModeManager(),
         sidecarConnector: SidecarConnecting = SidecarDeviceManager(),
-        batteryReceiver: BatteryReceiving? = CloudBatteryReceiver.shared
+        // 배터리 조회 구현체는 쓰는 앱이 넣습니다. 안 넣으면 배지가 표시되지 않습니다.
+        batteryReceiver: BatteryReceiving? = nil
     ) {
         self.detector = detector
         self.calculator = calculator

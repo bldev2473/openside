@@ -156,14 +156,13 @@ public final class DisplayManagerViewModel: ObservableObject {
         sidecarConnector.connect(to: device) { [weak self] result in
             Task { @MainActor [weak self] in
                 self?.isConnecting = false
-                switch result {
-                case .success:
-                    self?.errorMessage = nil
+                // 실패는 표시하지 않습니다. SidecarCore 가 자체 알림창을 띄우고, 그쪽 설명이
+                // 더 구체적입니다. 여기서 또 보여주면 같은 말이 두 번 나옵니다.
+                self?.errorMessage = nil
+                if case .success = result {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                         self?.refreshDisplays()
                     }
-                case .failure(let error):
-                    self?.errorMessage = error.localizedDescription
                 }
             }
         }
@@ -177,14 +176,12 @@ public final class DisplayManagerViewModel: ObservableObject {
         sidecarConnector.disconnect { [weak self] result in
             Task { @MainActor [weak self] in
                 self?.isConnecting = false
-                switch result {
-                case .success:
-                    self?.errorMessage = nil
+                // 연결과 같은 이유로 실패를 표시하지 않습니다.
+                self?.errorMessage = nil
+                if case .success = result {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                         self?.refreshDisplays()
                     }
-                case .failure(let error):
-                    self?.errorMessage = error.localizedDescription
                 }
             }
         }

@@ -226,4 +226,26 @@ final class ConnectFailureTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertNil(viewModel.lastConnectFailure, "성공하면 표시를 지운다")
     }
+
+    /// 자동 연결은 어느 기기에 붙을지를 여기서 배운다. 실패한 기기를 배우면 안 된다.
+    @MainActor
+    func testOnlyASuccessfulConnectionIsRemembered() async {
+        let connector = ScriptedConnector()
+        let viewModel = DisplayManagerViewModel(
+            detector: StubDetector(),
+            sidecarConnector: connector,
+            readinessChecker: StubChecker()
+        )
+        XCTAssertNil(viewModel.lastConnectedDevice)
+
+        connector.fails = true
+        viewModel.connectSidecar(to: Self.device)
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertNil(viewModel.lastConnectedDevice, "붙지 못한 기기는 기억하지 않는다")
+
+        connector.fails = false
+        viewModel.connectSidecar(to: Self.device)
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertEqual(viewModel.lastConnectedDevice, Self.device)
+    }
 }

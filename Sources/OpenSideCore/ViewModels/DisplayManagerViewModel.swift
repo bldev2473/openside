@@ -25,6 +25,9 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 마지막으로 연결에 실패한 기기. 화면에는 쓰지 않습니다.
     /// 자동 연결이 같은 기기에 같은 실패를 되풀이하지 않도록 두는 표시입니다.
     @Published public private(set) var lastConnectFailure: SidecarDeviceInfo?
+    /// 마지막으로 연결에 성공한 기기. 화면에는 쓰지 않습니다.
+    /// 자동 연결이 어느 기기를 골라야 하는지 여기서 배웁니다.
+    @Published public private(set) var lastConnectedDevice: SidecarDeviceInfo?
     @Published public var errorMessage: String?
 
     private let detector: DisplayDetecting
@@ -165,6 +168,7 @@ public final class DisplayManagerViewModel: ObservableObject {
                 switch result {
                 case .success:
                     self?.lastConnectFailure = nil
+                    self?.lastConnectedDevice = device
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                         self?.refreshDisplays()
                     }

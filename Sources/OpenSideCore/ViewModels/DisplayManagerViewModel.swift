@@ -22,6 +22,9 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 현재 잔량으로 더 쓸 수 있는 시간(초). 추정 구현체가 없거나 표본이 모자라면 nil.
     @Published public private(set) var remainingEstimate: TimeInterval?
     @Published public private(set) var isConnecting: Bool = false
+    /// 마지막으로 연결에 실패한 기기. 화면에는 쓰지 않습니다.
+    /// 자동 연결이 같은 기기에 같은 실패를 되풀이하지 않도록 두는 표시입니다.
+    @Published public private(set) var lastConnectFailure: SidecarDeviceInfo?
     @Published public var errorMessage: String?
 
     private let detector: DisplayDetecting
@@ -159,10 +162,14 @@ public final class DisplayManagerViewModel: ObservableObject {
                 // 실패는 표시하지 않습니다. SidecarCore 가 자체 알림창을 띄우고, 그쪽 설명이
                 // 더 구체적입니다. 여기서 또 보여주면 같은 말이 두 번 나옵니다.
                 self?.errorMessage = nil
-                if case .success = result {
+                switch result {
+                case .success:
+                    self?.lastConnectFailure = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                         self?.refreshDisplays()
                     }
+                case .failure:
+                    self?.lastConnectFailure = device
                 }
             }
         }

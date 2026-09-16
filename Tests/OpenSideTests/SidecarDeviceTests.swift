@@ -177,3 +177,53 @@ final class UserDefaultsPresetManagerTests: XCTestCase {
         XCTAssertNil(reopened.loadLastPreset())
     }
 }
+
+final class ConnectFailureTests: XCTestCase {
+
+    struct StubDetector: DisplayDetecting {
+        func getActiveDisplays() -> [DisplayInfo] { [] }
+        func getSidecarDisplay() -> DisplayInfo? { nil }
+        func getMainDisplay() -> DisplayInfo? { nil }
+    }
+
+    struct StubChecker: SidecarReadinessChecking {
+        func currentIssues() -> [SidecarReadinessIssue] { [] }
+    }
+
+    final class ScriptedConnector: SidecarConnecting, @unchecked Sendable {
+        var fails = false
+        func getAvailableDevices() -> [SidecarDeviceInfo] { [] }
+        func connect(to device: SidecarDeviceInfo, completion: @escaping @Sendable (Result<Void, Error>) -> Void) {
+            completion(fails ? .failure(NSError(domain: "Test", code: 1)) : .success(()))
+        }
+        func disconnect(completion: @escaping @Sendable (Result<Void, Error>) -> Void) {
+            completion(.success(()))
+        }
+    }
+
+    private static let device = SidecarDeviceInfo(id: "A", name: "iPad", isConnected: false)
+
+    /// 연결 실패는 화면에 안 쓰지만 버리지도 않는다. 자동 연결이 이 표시를 보고
+    /// 같은 기기에 되풀이해서 붙지 않는다.
+    @MainActor
+    func testFailureIsRecordedAndClearedOnSuccess() async {
+        let connector = ScriptedConnector()
+        let viewModel = DisplayManagerViewModel(
+            detector: StubDetector(),
+            sidecarConnector: connector,
+            readinessChecker: StubChecker()
+        )
+        XCTAssertNil(viewModel.lastConnectFailure)
+
+        connector.fails = true
+        viewModel.connectSidecar(to: Self.device)
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertEqual(viewModel.lastConnectFailure, Self.device)
+        XCTAssertNil(viewModel.errorMessage, "macOS 가 자체 알림창을 띄우므로 우리는 안 띄운다")
+
+        connector.fails = false
+        viewModel.connectSidecar(to: Self.device)
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertNil(viewModel.lastConnectFailure, "성공하면 표시를 지운다")
+    }
+}

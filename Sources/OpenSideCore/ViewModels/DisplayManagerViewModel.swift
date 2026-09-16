@@ -16,6 +16,8 @@ public final class DisplayManagerViewModel: ObservableObject {
     @Published public private(set) var isCurrentResolutionHiDPI: Bool = false
     @Published public private(set) var canToggleHiDPI: Bool = false
     @Published public private(set) var availableSidecarDevices: [SidecarDeviceInfo] = []
+    /// 기기를 찾지 못했을 때 Mac 쪽에서 확인된 원인. 기기가 있으면 비어 있습니다.
+    @Published public private(set) var readinessIssues: [SidecarReadinessIssue] = []
     @Published public private(set) var sidecarBattery: SidecarBatteryInfo?
     @Published public private(set) var isConnecting: Bool = false
     @Published public var errorMessage: String?
@@ -26,6 +28,7 @@ public final class DisplayManagerViewModel: ObservableObject {
     private let presetManager: PresetManaging
     private let modeManager: DisplayModeManaging
     private let sidecarConnector: SidecarConnecting
+    private let readinessChecker: SidecarReadinessChecking
     private let batteryReceiver: BatteryReceiving?
 
     private var screenNotificationObserver: NSObjectProtocol?
@@ -37,6 +40,7 @@ public final class DisplayManagerViewModel: ObservableObject {
         presetManager: PresetManaging = UserDefaultsPresetManager(),
         modeManager: DisplayModeManaging = CoreGraphicsDisplayModeManager(),
         sidecarConnector: SidecarConnecting = SidecarDeviceManager(),
+        readinessChecker: SidecarReadinessChecking = SystemSidecarReadinessChecker(),
         // 배터리 조회 구현체는 쓰는 앱이 넣습니다. 안 넣으면 배지가 표시되지 않습니다.
         batteryReceiver: BatteryReceiving? = nil
     ) {
@@ -46,6 +50,7 @@ public final class DisplayManagerViewModel: ObservableObject {
         self.presetManager = presetManager
         self.modeManager = modeManager
         self.sidecarConnector = sidecarConnector
+        self.readinessChecker = readinessChecker
         self.batteryReceiver = batteryReceiver
         self.lastAppliedPreset = presetManager.loadLastPreset()
 
@@ -106,6 +111,8 @@ public final class DisplayManagerViewModel: ObservableObject {
         }
 
         self.availableSidecarDevices = sidecarConnector.getAvailableDevices()
+        // 목록에 기기가 남아 있어도 전제 조건이 깨졌으면 연결은 실패하므로 항상 점검합니다.
+        self.readinessIssues = self.isSidecarConnected ? [] : readinessChecker.currentIssues()
         self.errorMessage = nil
     }
 

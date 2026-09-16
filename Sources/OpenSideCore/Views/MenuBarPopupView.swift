@@ -187,6 +187,43 @@ public struct MenuBarPopupView: View {
                     .padding(.vertical, 8)
             }
 
+            // 전제 조건이 깨졌으면 기기 목록과 무관하게 알립니다. 목록에 남아 있어도 연결은 실패합니다.
+            ForEach(viewModel.readinessIssues, id: \.self) { issue in
+                VStack(spacing: 4) {
+                    Button(action: {
+                        if let url = issue.settingsURL {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 11))
+                            Text(strings.readinessHint(issue))
+                                .font(.system(size: 12, weight: .semibold))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        // 문구는 가운데 두고 바로가기 아이콘만 우측 끝에 고정합니다.
+                        .overlay(alignment: .trailing) {
+                            Image(systemName: "arrow.up.forward.app.fill")
+                                .font(.system(size: 11))
+                                .padding(.trailing, 10)
+                        }
+                        .background(Color.orange)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(issue.settingsURL == nil)
+
+                    Text(strings.readinessCallToAction)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             // 오류 메시지 표시
             if let error = viewModel.errorMessage {
                 Text(error)

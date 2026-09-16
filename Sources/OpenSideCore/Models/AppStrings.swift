@@ -20,6 +20,10 @@ public struct LocalizedUIStrings: Sendable {
     public let iPadBatteryTooltip: @Sendable (String) -> String
     /// 연결 가능한 사이드카 기기를 찾지 못했을 때 안내
     public let noSidecarDevices: String
+    /// 기기를 찾지 못한 원인 안내
+    public let readinessHint: @Sendable (SidecarReadinessIssue) -> String
+    /// 전제 조건 활성화를 권하는 안내 문구
+    public let readinessCallToAction: String
     public let presetLabels: @Sendable (DisplayArrangementPreset) -> String
 }
 
@@ -45,6 +49,13 @@ extension AppLanguage {
                 settingsTitle: "설정",
                 iPadBatteryTooltip: { "iPad 배터리 · 마지막 갱신 \($0)" },
                 noSidecarDevices: "연결 가능한 기기 없음",
+                readinessHint: { issue in
+                    switch issue {
+                    case .wifiOff: return "이 Mac의 Wi-Fi가 꺼져 있습니다"
+                    case .handoffOff: return "이 Mac의 Handoff가 꺼져 있습니다"
+                    }
+                },
+                readinessCallToAction: "원활한 동작을 위해 활성화해주세요",
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "상단 중앙"
@@ -76,6 +87,13 @@ extension AppLanguage {
                 settingsTitle: "Settings",
                 iPadBatteryTooltip: { "iPad battery · Last updated \($0)" },
                 noSidecarDevices: "No devices available",
+                readinessHint: { issue in
+                    switch issue {
+                    case .wifiOff: return "Wi-Fi is off on this Mac"
+                    case .handoffOff: return "Handoff is off on this Mac"
+                    }
+                },
+                readinessCallToAction: "Enable it for reliable operation",
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "Top Center"
@@ -107,6 +125,13 @@ extension AppLanguage {
                 settingsTitle: "設定",
                 iPadBatteryTooltip: { "iPad バッテリー · 最終更新 \($0)" },
                 noSidecarDevices: "利用可能なデバイスなし",
+                readinessHint: { issue in
+                    switch issue {
+                    case .wifiOff: return "この Mac の Wi-Fi がオフです"
+                    case .handoffOff: return "この Mac の Handoff がオフです"
+                    }
+                },
+                readinessCallToAction: "安定した動作のために有効にしてください",
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "上中央"
@@ -138,6 +163,13 @@ extension AppLanguage {
                 settingsTitle: "设置",
                 iPadBatteryTooltip: { "iPad 电量 · 最后更新 \($0)" },
                 noSidecarDevices: "无可用设备",
+                readinessHint: { issue in
+                    switch issue {
+                    case .wifiOff: return "此 Mac 的 Wi-Fi 已关闭"
+                    case .handoffOff: return "此 Mac 的 Handoff 已关闭"
+                    }
+                },
+                readinessCallToAction: "请启用以确保正常运行",
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "上中"

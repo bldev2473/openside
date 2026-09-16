@@ -61,7 +61,7 @@ public struct DisplayVisualizerView: View {
                         Image(systemName: "ipad.landscape")
                             .font(.system(size: 14))
                             .foregroundStyle(.primary)
-                        Text("Sidecar")
+                        Text("iPad")
                             .font(.system(size: 10, weight: .medium))
                     }
                     .frame(width: sidecarRect.width, height: sidecarRect.height)

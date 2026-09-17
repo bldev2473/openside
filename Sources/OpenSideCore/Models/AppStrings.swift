@@ -22,6 +22,12 @@ public struct LocalizedUIStrings: Sendable {
     public let noSidecarDevices: String
     /// 해상도 행 제목
     public let resolution: String
+    /// 복제 중 메인 화면 해상도 라벨. 두 화면이 함께 바뀝니다.
+    public let mainResolution: String
+    /// 확장 표시 모드 라벨
+    public let extendDisplay: String
+    /// 메인 화면 복제 모드 라벨
+    public let mirrorDisplay: String
     /// 남은 사용 시간 추정. 인자는 시간 표기
     public let approximateRemaining: @Sendable (String) -> String
     /// 기기를 찾지 못한 원인 안내
@@ -54,6 +60,9 @@ extension AppLanguage {
                 iPadBatteryTooltip: { "iPad 배터리 · 마지막 갱신 \($0)" },
                 noSidecarDevices: "연결 가능한 기기 없음",
                 resolution: "해상도",
+                mainResolution: "메인 해상도",
+                extendDisplay: "확장",
+                mirrorDisplay: "복제",
                 approximateRemaining: { "약 \($0)" },
                 readinessHint: { issue in
                     switch issue {
@@ -94,6 +103,9 @@ extension AppLanguage {
                 iPadBatteryTooltip: { "iPad battery · Last updated \($0)" },
                 noSidecarDevices: "No devices available",
                 resolution: "Resolution",
+                mainResolution: "Main resolution",
+                extendDisplay: "Extend",
+                mirrorDisplay: "Mirror",
                 approximateRemaining: { "about \($0)" },
                 readinessHint: { issue in
                     switch issue {
@@ -134,6 +146,9 @@ extension AppLanguage {
                 iPadBatteryTooltip: { "iPad バッテリー · 最終更新 \($0)" },
                 noSidecarDevices: "利用可能なデバイスなし",
                 resolution: "解像度",
+                mainResolution: "メインの解像度",
+                extendDisplay: "拡張",
+                mirrorDisplay: "ミラーリング",
                 approximateRemaining: { "約 \($0)" },
                 readinessHint: { issue in
                     switch issue {
@@ -174,6 +189,9 @@ extension AppLanguage {
                 iPadBatteryTooltip: { "iPad 电量 · 最后更新 \($0)" },
                 noSidecarDevices: "无可用设备",
                 resolution: "分辨率",
+                mainResolution: "主屏幕分辨率",
+                extendDisplay: "扩展",
+                mirrorDisplay: "镜像",
                 approximateRemaining: { "约 \($0)" },
                 readinessHint: { issue in
                     switch issue {

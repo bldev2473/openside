@@ -126,6 +126,12 @@ final class CustomArrangementPersistenceTests: XCTestCase {
             displayID: CGDirectDisplayID,
             origin: TargetDisplayOrigin
         ) -> Result<Void, DisplayConfigurationError> { .success(()) }
+        func configureMirroring(
+            displayID: CGDirectDisplayID,
+            mirrorOf masterID: CGDirectDisplayID?,
+            persistence: DisplayConfigurationPersistence
+        ) -> Result<Void, DisplayConfigurationError> { .success(()) }
+        func isMirroring(displayID: CGDirectDisplayID) -> Bool { false }
     }
 
     /// 프리셋을 적용한 뒤 직접 끌어다 놓으면, 저장된 프리셋도 지워져야 한다.

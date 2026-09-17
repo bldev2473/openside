@@ -18,6 +18,9 @@ public struct DisplayInfo: Identifiable, Equatable, Sendable {
     public let isBuiltin: Bool
     /// 아이패드 사이드카 디스플레이 여부
     public let isSidecar: Bool
+    /// 다른 디스플레이를 복제하고 있는지 여부.
+    /// 복제 중에는 bounds 가 원본 디스플레이의 크기를 보고하므로 해상도로 읽으면 안 됩니다.
+    public let isMirrored: Bool
 
     public init(
         id: CGDirectDisplayID,
@@ -26,7 +29,8 @@ public struct DisplayInfo: Identifiable, Equatable, Sendable {
         bounds: CGRect,
         isMain: Bool,
         isBuiltin: Bool,
-        isSidecar: Bool
+        isSidecar: Bool,
+        isMirrored: Bool = false
     ) {
         self.id = id
         self.uuid = uuid
@@ -35,6 +39,7 @@ public struct DisplayInfo: Identifiable, Equatable, Sendable {
         self.isMain = isMain
         self.isBuiltin = isBuiltin
         self.isSidecar = isSidecar
+        self.isMirrored = isMirrored
     }
 }
 

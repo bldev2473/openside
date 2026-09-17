@@ -90,17 +90,65 @@ public struct MenuBarPopupView: View {
                 .buttonStyle(.plain)
             }
 
+            // 확장이냐 복제냐가 도식과 그 아래 모든 것의 뜻을 정합니다. 그래서 맨 위,
+            // 도식 바로 앞에 둡니다.
+            //
+            // 복제는 자동으로 켜지지 않습니다. 메인 화면 전부가 iPad 로 나가므로
+            // 무엇을 보낼지 사용자가 매번 고릅니다.
+            if viewModel.isSidecarConnected {
+                Picker("", selection: Binding(
+                    get: { viewModel.isSidecarMirrored },
+                    set: { mirror in viewModel.toggleMirroring(mirror) }
+                )) {
+                    Text(strings.extendDisplay).tag(false)
+                    Text(strings.mirrorDisplay).tag(true)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .controlSize(.small)
+            }
+
             // 디스플레이 상대 배치 시각화 뷰 (드래그 미세 정렬 연동)
             DisplayVisualizerView(
                 mainDisplay: viewModel.mainDisplay,
                 sidecarDisplay: viewModel.sidecarDisplay,
+                isMirrored: viewModel.isSidecarMirrored,
                 onDragEnded: { targetOrigin in
                     viewModel.applyCustomOrigin(targetOrigin)
                 }
             )
 
-            // 사이드카 해상도 선택 및 HiDPI 제어
-            if let sidecar = viewModel.sidecarDisplay {
+            // 복제 중에는 메인 화면 해상도를 고릅니다. 미러 세트는 해상도가 하나이고
+            // 메인이 그것을 정합니다. iPad 쪽 모드를 바꾸면 값만 갈라지고 그림은 그대로였습니다.
+            // Mac 본체 화면도 함께 바뀌므로 라벨에 대상이 메인임을 밝힙니다.
+            if viewModel.isSidecarMirrored, !viewModel.availableMainResolutions.isEmpty {
+                HStack(spacing: 6) {
+                    Text(strings.mainResolution)
+                        .font(.system(size: 11, weight: .medium))
+
+                    Spacer()
+
+                    Picker("", selection: Binding<DisplayResolutionMode?>(
+                        get: { viewModel.availableMainResolutions.first { $0.isCurrent } },
+                        set: { mode in
+                            if let mode { viewModel.changeMainResolution(mode) }
+                        }
+                    )) {
+                        ForEach(viewModel.availableMainResolutions) { mode in
+                            Text("\(mode.width) × \(mode.height)")
+                                .tag(DisplayResolutionMode?.some(mode))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .controlSize(.small)
+                    .fixedSize()
+                }
+                .padding(.horizontal, 4)
+            }
+
+            // 사이드카 해상도 선택 및 HiDPI 제어. 확장일 때만입니다.
+            if viewModel.sidecarDisplay != nil, !viewModel.isSidecarMirrored {
                 HStack(spacing: 6) {
                     Text(strings.resolution)
                         .font(.system(size: 11, weight: .medium))
@@ -108,31 +156,23 @@ public struct MenuBarPopupView: View {
                     Spacer()
 
                     if !viewModel.availableResolutions.isEmpty {
-                        Menu {
+                        // Picker 를 씁니다. Menu 안의 Button 라벨은 메뉴 항목으로 평탄화되면서
+                        // HStack 안의 체크마크 Image 가 버려져 현재 항목이 표시되지 않았습니다.
+                        // Picker 는 선택 표시를 macOS 가 직접 그립니다.
+                        Picker("", selection: Binding<DisplayResolutionMode?>(
+                            get: { viewModel.availableResolutions.first { $0.isCurrent } },
+                            set: { mode in
+                                if let mode { viewModel.changeSidecarResolution(mode) }
+                            }
+                        )) {
                             ForEach(viewModel.availableResolutions) { mode in
-                                Button(action: {
-                                    viewModel.changeSidecarResolution(mode)
-                                }) {
-                                    HStack {
-                                        Text("\(mode.width) × \(mode.height)")
-                                        if mode.width == Int(sidecar.bounds.width) && mode.height == Int(sidecar.bounds.height) {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
+                                Text("\(mode.width) × \(mode.height)")
+                                    .tag(DisplayResolutionMode?.some(mode))
                             }
-                        } label: {
-                            HStack(spacing: 3) {
-                                Text("\(Int(sidecar.bounds.width)) × \(Int(sidecar.bounds.height))")
-                                    .font(.system(size: 11, design: .monospaced))
-                                Image(systemName: "chevron.up.chevron.down")
-                                    .font(.system(size: 8))
-                            }
-                            .foregroundStyle(Color.accentColor)
                         }
-                        .menuStyle(.borderlessButton)
-                        // SwiftUI 가 표시기를 하나 더 그린다. 위 라벨의 chevron 만 남긴다.
-                        .menuIndicator(.hidden)
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .controlSize(.small)
                         .fixedSize()
                     }
 
@@ -156,18 +196,20 @@ public struct MenuBarPopupView: View {
                 .padding(.horizontal, 4)
             }
 
-            Divider()
-
             // 연결 상태에 따라 정렬 프리셋 또는 연결 버튼을 노출
             if viewModel.isSidecarConnected {
-                PresetButtonGrid(
-                    isEnabled: true,
-                    selectedPreset: viewModel.lastAppliedPreset,
-                    languageManager: languageManager,
-                    onSelect: { preset in
-                        viewModel.applyPreset(preset)
-                    }
-                )
+                // 복제 중에는 배치를 바꿀 수 없습니다. 두 화면이 한 화면이라 좌표가 하나뿐입니다.
+                // 연결된 상태이므로 아래 연결 버튼 분기로 떨어지면 안 됩니다.
+                if !viewModel.isSidecarMirrored {
+                    PresetButtonGrid(
+                        isEnabled: true,
+                        selectedPreset: viewModel.lastAppliedPreset,
+                        languageManager: languageManager,
+                        onSelect: { preset in
+                            viewModel.applyPreset(preset)
+                        }
+                    )
+                }
             } else if let firstDevice = viewModel.availableSidecarDevices.first {
                 Button(action: {
                     viewModel.connectSidecar(to: firstDevice)

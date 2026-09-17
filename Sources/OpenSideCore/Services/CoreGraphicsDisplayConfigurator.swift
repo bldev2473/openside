@@ -34,3 +34,40 @@ public struct CoreGraphicsDisplayConfigurator: DisplayConfiguring {
         return .success(())
     }
 }
+
+extension CoreGraphicsDisplayConfigurator {
+
+    public func configureMirroring(
+        displayID: CGDirectDisplayID,
+        mirrorOf masterID: CGDirectDisplayID?,
+        persistence: DisplayConfigurationPersistence = .session
+    ) -> Result<Void, DisplayConfigurationError> {
+        var configRef: CGDisplayConfigRef?
+
+        let beginResult = CGBeginDisplayConfiguration(&configRef)
+        guard beginResult == .success, let config = configRef else {
+            return .failure(.beginConfigurationFailed(code: beginResult.rawValue))
+        }
+
+        // kCGNullDirectDisplay 를 원본으로 주면 복제가 풀리고 확장으로 돌아갑니다.
+        let master = masterID ?? kCGNullDirectDisplay
+        let mirrorResult = CGConfigureDisplayMirrorOfDisplay(config, displayID, master)
+        guard mirrorResult == .success else {
+            CGCancelDisplayConfiguration(config)
+            return .failure(.configureMirroringFailed(code: mirrorResult.rawValue))
+        }
+
+        let scope: CGConfigureOption = persistence == .session ? .forSession : .permanently
+        let completeResult = CGCompleteDisplayConfiguration(config, scope)
+        guard completeResult == .success else {
+            CGCancelDisplayConfiguration(config)
+            return .failure(.completeConfigurationFailed(code: completeResult.rawValue))
+        }
+
+        return .success(())
+    }
+
+    public func isMirroring(displayID: CGDirectDisplayID) -> Bool {
+        CGDisplayMirrorsDisplay(displayID) != kCGNullDirectDisplay
+    }
+}

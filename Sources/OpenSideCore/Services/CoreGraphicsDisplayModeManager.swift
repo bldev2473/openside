@@ -90,7 +90,8 @@ public struct CoreGraphicsDisplayModeManager: DisplayModeManaging {
 
     public func setDisplayResolution(
         displayID: CGDirectDisplayID,
-        mode: DisplayResolutionMode
+        mode: DisplayResolutionMode,
+        persistence: DisplayConfigurationPersistence = .permanent
     ) -> Result<Void, DisplayConfigurationError> {
         let options: [CFString: Any] = [
             kCGDisplayShowDuplicateLowResolutionModes: kCFBooleanTrue!
@@ -124,7 +125,8 @@ public struct CoreGraphicsDisplayModeManager: DisplayModeManaging {
             return .failure(.configureOriginFailed(code: configureResult.rawValue))
         }
 
-        let completeResult = CGCompleteDisplayConfiguration(config, .permanently)
+        let scope: CGConfigureOption = persistence == .session ? .forSession : .permanently
+        let completeResult = CGCompleteDisplayConfiguration(config, scope)
         guard completeResult == .success else {
             CGCancelDisplayConfiguration(config)
             return .failure(.completeConfigurationFailed(code: completeResult.rawValue))

@@ -42,6 +42,28 @@ public protocol DisplayConfiguring: Sendable {
         displayID: CGDirectDisplayID,
         origin: TargetDisplayOrigin
     ) -> Result<Void, DisplayConfigurationError>
+
+    /// 디스플레이를 다른 디스플레이의 복제본으로 만들거나 그 상태를 해제합니다.
+    /// - Parameters:
+    ///   - displayID: 대상 디스플레이 ID
+    ///   - masterID: 복제할 원본 디스플레이 ID. nil 이면 복제를 해제하고 확장으로 되돌립니다.
+    ///   - persistence: 변경을 얼마나 오래 유지할지.
+    func configureMirroring(
+        displayID: CGDirectDisplayID,
+        mirrorOf masterID: CGDirectDisplayID?,
+        persistence: DisplayConfigurationPersistence
+    ) -> Result<Void, DisplayConfigurationError>
+
+    /// 해당 디스플레이가 지금 다른 디스플레이를 복제하고 있는지 알려줍니다.
+    func isMirroring(displayID: CGDirectDisplayID) -> Bool
+}
+
+/// 디스플레이 설정 변경을 얼마나 오래 유지할지.
+public enum DisplayConfigurationPersistence: Sendable {
+    /// 로그아웃하면 원래대로 돌아갑니다.
+    case session
+    /// 다시 바꾸기 전까지 남습니다.
+    case permanent
 }
 
 /// 디스플레이 구성 처리 중 발생 가능한 오류 타입
@@ -49,6 +71,7 @@ public enum DisplayConfigurationError: Error, LocalizedError, Equatable {
     case beginConfigurationFailed(code: Int32)
     case configureOriginFailed(code: Int32)
     case completeConfigurationFailed(code: Int32)
+    case configureMirroringFailed(code: Int32)
 
     public var errorDescription: String? {
         switch self {
@@ -58,6 +81,8 @@ public enum DisplayConfigurationError: Error, LocalizedError, Equatable {
             return "디스플레이 좌표 변경 실패 (오류 코드: \(code))"
         case .completeConfigurationFailed(let code):
             return "디스플레이 구성 완료 커밋 실패 (오류 코드: \(code))"
+        case .configureMirroringFailed(let code):
+            return "디스플레이 복제 설정 실패 (오류 코드: \(code))"
         }
     }
 }
@@ -98,10 +123,12 @@ public protocol DisplayModeManaging: Sendable {
     /// 지정된 디스플레이의 현재 적용된 해상도 모드를 반환합니다.
     func getCurrentMode(displayID: CGDirectDisplayID) -> DisplayResolutionMode?
 
-    /// 지정된 디스플레이의 해상도를 변경하여 영구적으로 적용합니다.
+    /// 지정된 디스플레이의 해상도를 변경합니다.
+    /// - Parameter persistence: 변경을 얼마나 오래 유지할지. 기본값은 영구입니다.
     func setDisplayResolution(
         displayID: CGDirectDisplayID,
-        mode: DisplayResolutionMode
+        mode: DisplayResolutionMode,
+        persistence: DisplayConfigurationPersistence
     ) -> Result<Void, DisplayConfigurationError>
 
     /// 현재 해상도에서 HiDPI 전환이 가능한지 여부를 반환합니다.

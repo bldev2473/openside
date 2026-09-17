@@ -4,6 +4,8 @@ import SwiftUI
 public struct DisplayVisualizerView: View {
     public let mainDisplay: DisplayInfo?
     public let sidecarDisplay: DisplayInfo?
+    /// 복제 중인지 여부. 복제는 화면이 둘이 아니라 하나이므로 카드도 한 장만 그립니다.
+    public let isMirrored: Bool
     public let onDragEnded: ((TargetDisplayOrigin) -> Void)?
 
     private let transformer: CoordinateTransforming
@@ -14,11 +16,13 @@ public struct DisplayVisualizerView: View {
     public init(
         mainDisplay: DisplayInfo?,
         sidecarDisplay: DisplayInfo?,
+        isMirrored: Bool = false,
         transformer: CoordinateTransforming = MiniatureCoordinateTransformer(),
         onDragEnded: ((TargetDisplayOrigin) -> Void)? = nil
     ) {
         self.mainDisplay = mainDisplay
         self.sidecarDisplay = sidecarDisplay
+        self.isMirrored = isMirrored
         self.transformer = transformer
         self.onDragEnded = onDragEnded
     }
@@ -36,7 +40,30 @@ public struct DisplayVisualizerView: View {
                             .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
                     )
 
-                if let mainRect = mainRect {
+                // 복제 중에는 두 디스플레이가 같은 bounds 를 보고합니다. 두 장을 그리면
+                // 정확히 겹쳐서 글자가 포개집니다. 화면이 하나이므로 카드도 한 장입니다.
+                if isMirrored, let mainRect = mainRect {
+                    HStack(spacing: 6) {
+                        Image(systemName: "laptopcomputer")
+                            .font(.system(size: 14))
+                        Image(systemName: "plus")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "ipad.landscape")
+                            .font(.system(size: 14))
+                    }
+                    .foregroundStyle(.primary)
+                    .frame(width: mainRect.width, height: mainRect.height)
+                    .background(Color.green.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.green, lineWidth: 1.5)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .position(x: mainRect.midX, y: mainRect.midY)
+                }
+
+                if !isMirrored, let mainRect = mainRect {
                     // 메인 맥북 디스플레이 미니어처
                     VStack(spacing: 2) {
                         Image(systemName: "laptopcomputer")
@@ -55,7 +82,7 @@ public struct DisplayVisualizerView: View {
                     .position(x: mainRect.midX, y: mainRect.midY)
                 }
 
-                if let sidecarRect = sidecarRect {
+                if !isMirrored, let sidecarRect = sidecarRect {
                     // 사이드카 아이패드 디스플레이 미니어처 (드래그 가능)
                     VStack(spacing: 2) {
                         Image(systemName: "ipad.landscape")
@@ -106,7 +133,7 @@ public struct DisplayVisualizerView: View {
         guard let main = mainDisplay else { return (nil, nil, 1.0) }
 
         var allRects = [main.bounds]
-        if let sidecar = sidecarDisplay {
+        if let sidecar = sidecarDisplay, !isMirrored {
             allRects.append(sidecar.bounds)
         }
 

@@ -15,6 +15,14 @@ public final class DisplayManagerViewModel: ObservableObject {
     @Published public private(set) var currentResolution: DisplayResolutionMode?
     @Published public private(set) var isCurrentResolutionHiDPI: Bool = false
     @Published public private(set) var canToggleHiDPI: Bool = false
+    /// iPad 가 메인 화면을 복제하고 있는지. 복제 중에는 배치가 의미를 잃습니다.
+    @Published public private(set) var isSidecarMirrored: Bool = false
+    /// 메인 화면이 고를 수 있는 해상도. 복제 중에만 채웁니다.
+    ///
+    /// 복제 중에는 두 화면의 해상도가 하나이고 그것을 메인 화면이 정합니다. iPad 쪽 모드를
+    /// 바꾸면 두 화면이 보고하는 값만 갈라지고 iPad 에 보이는 그림은 그대로입니다.
+    /// 바꾸려면 메인을 바꿔야 합니다.
+    @Published public private(set) var availableMainResolutions: [DisplayResolutionMode] = []
     @Published public private(set) var availableSidecarDevices: [SidecarDeviceInfo] = []
     /// 기기를 찾지 못했을 때 Mac 쪽에서 확인된 원인. 기기가 있으면 비어 있습니다.
     @Published public private(set) var readinessIssues: [SidecarReadinessIssue] = []
@@ -111,6 +119,19 @@ public final class DisplayManagerViewModel: ObservableObject {
         }
     }
 
+    /// 모드 변경이 시스템에 반영된 뒤에 상태를 다시 읽습니다.
+    ///
+    /// 해상도 변경은 즉시 끝나지 않습니다. 복제 중에 재 보니 반영까지 0.48초가 걸렸습니다.
+    /// 예전에는 0.2초 뒤 한 번만 읽어 옛 값을 그대로 화면에 남겼습니다.
+    /// 두 번 읽는 것은 느린 기기에서 첫 번째가 일러도 두 번째가 받도록 하기 위함입니다.
+    private func refreshAfterModeChange() {
+        for delay in [0.6, 1.5] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.refreshDisplays()
+            }
+        }
+    }
+
     /// 현재 시스템의 디스플레이 상태를 새로고침합니다.
     public func refreshDisplays() {
         let activeDisplays = detector.getActiveDisplays()
@@ -118,6 +139,14 @@ public final class DisplayManagerViewModel: ObservableObject {
         self.mainDisplay = detector.getMainDisplay()
         self.sidecarDisplay = detector.getSidecarDisplay()
         self.isSidecarConnected = (self.sidecarDisplay != nil)
+
+        self.isSidecarMirrored = self.sidecarDisplay?.isMirrored ?? false
+
+        if self.isSidecarMirrored, let main = self.mainDisplay {
+            self.availableMainResolutions = modeManager.getAvailableModes(displayID: main.id)
+        } else {
+            self.availableMainResolutions = []
+        }
 
         if let sidecar = self.sidecarDisplay {
             self.availableResolutions = modeManager.getAvailableModes(displayID: sidecar.id)
@@ -155,9 +184,42 @@ public final class DisplayManagerViewModel: ObservableObject {
         case .success:
             self.isCurrentResolutionHiDPI = enabled
             self.errorMessage = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                self?.refreshDisplays()
-            }
+            refreshAfterModeChange()
+        case .failure(let error):
+            self.errorMessage = error.localizedDescription
+        }
+    }
+
+    /// iPad 가 메인 화면을 복제하도록 하거나 복제를 풀어 확장으로 되돌립니다.
+    ///
+    /// 자동으로 부르지 않습니다. 복제는 메인 화면 전부를 iPad 로 내보내므로, 무엇을 보낼지
+    /// 사용자가 매번 고르게 둡니다.
+    public func toggleMirroring(_ enable: Bool) {
+        guard let sidecar = sidecarDisplay else {
+            errorMessage = "연결된 사이드카 디스플레이가 없습니다."
+            return
+        }
+        guard let main = mainDisplay else {
+            errorMessage = "메인 디스플레이를 찾을 수 없습니다."
+            return
+        }
+
+        // 로그아웃하면 확장으로 돌아갑니다. 영구로 쓰면 macOS 가 이 디스플레이의 복제
+        // 설정을 기억해 iPad 를 새로 연결해도 복제 상태로 붙습니다. 복제는 그 세션 동안의
+        // 선택이지 기기에 남길 설정이 아닙니다.
+        let result = configurator.configureMirroring(
+            displayID: sidecar.id,
+            mirrorOf: enable ? main.id : nil,
+            persistence: .session
+        )
+
+        switch result {
+        case .success:
+            self.isSidecarMirrored = enable
+            self.errorMessage = nil
+            // 복제를 켜고 끄면 디스플레이 구성이 통째로 다시 섭니다.
+            refreshAfterModeChange()
+
         case .failure(let error):
             self.errorMessage = error.localizedDescription
         }
@@ -214,16 +276,34 @@ public final class DisplayManagerViewModel: ObservableObject {
             return
         }
 
-        let result = modeManager.setDisplayResolution(displayID: sidecar.id, mode: mode)
+        let result = modeManager.setDisplayResolution(displayID: sidecar.id, mode: mode, persistence: .permanent)
 
         switch result {
         case .success:
             self.currentResolution = mode
             self.errorMessage = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                self?.refreshDisplays()
-            }
+            refreshAfterModeChange()
 
+        case .failure(let error):
+            self.errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 메인 화면의 해상도를 변경합니다. 복제 중에는 iPad 도 같이 따라갑니다.
+    ///
+    /// Mac 본체 화면이 바뀌는 조작이므로 화면에서도 대상이 메인임을 밝혀야 합니다.
+    public func changeMainResolution(_ mode: DisplayResolutionMode) {
+        guard let main = mainDisplay else {
+            errorMessage = "메인 디스플레이를 찾을 수 없습니다."
+            return
+        }
+
+        // 로그아웃하면 원래대로 돌아갑니다. 복제 중 해상도는 Sidecar 세션에 딸린 임시
+        // 조정인데, 바뀌는 대상은 Mac 본체 화면입니다. 이 도구가 남길 자국이 아닙니다.
+        switch modeManager.setDisplayResolution(displayID: main.id, mode: mode, persistence: .session) {
+        case .success:
+            self.errorMessage = nil
+            refreshAfterModeChange()
         case .failure(let error):
             self.errorMessage = error.localizedDescription
         }

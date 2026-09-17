@@ -78,43 +78,27 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
             return
         }
 
-        let devicesSel = NSSelectorFromString("devices")
-        let rawDevices = (manager.perform(devicesSel)?.takeUnretainedValue() as? [AnyObject]) ?? []
+        let rawDevices = (manager.perform(NSSelectorFromString("devices"))?.takeUnretainedValue() as? [AnyObject]) ?? []
 
-        // 이름 또는 ID로 대상 디바이스 검색
-        guard let targetDev = rawDevices.first(where: { dev in
-            let nameSel = NSSelectorFromString("name")
-            let devName = dev.perform(nameSel)?.takeUnretainedValue() as? String
-            return devName == device.name
-        }) else {
+        // 이름이 아니라 식별자로 찾습니다. 이름이 같은 iPad 가 둘이면 이름으로는 못 가립니다.
+        guard let targetDev = rawDevices.first(where: { stableIdentifier(of: $0) == device.id }) else {
             completion(.failure(NSError(domain: "OpenSide", code: -2, userInfo: [NSLocalizedDescriptionKey: "연결할 기기를 찾을 수 없습니다: \(device.name)"])))
             return
         }
 
+        let block: @convention(block) (Error?) -> Void = { error in
+            if let error { completion(.failure(error)) } else { completion(.success(())) }
+        }
+
         let connectSel = NSSelectorFromString("connectToDevice:completion:")
-        guard manager.responds(to: connectSel) else {
+        guard manager.responds(to: connectSel),
+              let method = class_getInstanceMethod(type(of: manager), connectSel) else {
             completion(.failure(NSError(domain: "OpenSide", code: -3, userInfo: [NSLocalizedDescriptionKey: "Sidecar 연결 메서드를 찾을 수 없습니다."])))
             return
         }
-
-        typealias ConnectFunc = @convention(c) (AnyObject, Selector, AnyObject, @convention(block) (Error?) -> Void) -> Void
-        guard let method = class_getInstanceMethod(type(of: manager), connectSel) else {
-            completion(.failure(NSError(domain: "OpenSide", code: -4, userInfo: [NSLocalizedDescriptionKey: "연결 함수 구현체를 찾을 수 없습니다."])))
-            return
-        }
-
-        let imp = method_getImplementation(method)
-        let connectFunc = unsafeBitCast(imp, to: ConnectFunc.self)
-
-        let block: @convention(block) (Error?) -> Void = { error in
-            if let error = error {
-                completion(.failure(error))
-            } else {
-                completion(.success(()))
-            }
-        }
-
-        connectFunc(manager, connectSel, targetDev, block)
+        typealias PlainConnect = @convention(c) (AnyObject, Selector, AnyObject, AnyObject) -> Void
+        let fn = unsafeBitCast(method_getImplementation(method), to: PlainConnect.self)
+        fn(manager, connectSel, targetDev, unsafeBitCast(block, to: AnyObject.self))
     }
 
     public func disconnect(completion: @escaping @Sendable (Result<Void, Error>) -> Void) {

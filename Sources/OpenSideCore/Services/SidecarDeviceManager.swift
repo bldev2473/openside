@@ -101,6 +101,40 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
         fn(manager, connectSel, targetDev, unsafeBitCast(block, to: AnyObject.self))
     }
 
+    public func currentSessionInfo() -> SidecarSessionInfo? {
+        guard let manager = getSharedManager() else { return nil }
+
+        let connected = (manager.perform(NSSelectorFromString("connectedDevices"))?.takeUnretainedValue() as? [AnyObject]) ?? []
+        guard let device = connected.first else { return nil }
+
+        let configSel = NSSelectorFromString("configForDevice:")
+        guard manager.responds(to: configSel),
+              let config = manager.perform(configSel, with: device)?.takeUnretainedValue() as? NSObject else {
+            return nil
+        }
+
+        // 붙어 있지 않으면 configForDevice: 가 nil 을 줍니다. 여기 온 이상 세션이 있습니다.
+        func number(_ key: String) -> Int? { (config.value(forKey: key) as? NSNumber)?.intValue }
+        guard let framerate = number("framerate"),
+              let minimumBitrate = number("txMinBitrate"),
+              let maximumBitrate = number("txMaxBitrate"),
+              let scale = number("scale"),
+              let size = config.value(forKey: "size") as? NSValue else {
+            return nil
+        }
+
+        let logical = size.sizeValue
+        return SidecarSessionInfo(
+            framerate: framerate,
+            minimumBitrate: minimumBitrate,
+            maximumBitrate: maximumBitrate,
+            width: Int(logical.width),
+            height: Int(logical.height),
+            scale: scale,
+            isHDR: (number("hdr") ?? 0) != 0
+        )
+    }
+
     public func disconnect(completion: @escaping @Sendable (Result<Void, Error>) -> Void) {
         guard let manager = getSharedManager() else {
             completion(.failure(NSError(domain: "OpenSide", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sidecar 서비스를 로드할 수 없습니다."])))

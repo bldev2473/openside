@@ -24,7 +24,7 @@ open class OpenSideAppDelegate: NSObject, NSApplicationDelegate, MenuBarMenuHand
 
     /// 설정 창에 담을 뷰. 쓰는 앱이 자체 섹션을 더하려면 재정의합니다.
     open func makeSettingsView() -> AnyView {
-        AnyView(SettingsView())
+        AnyView(SettingsView(viewModel: viewModel))
     }
 
     /// '설정' 메뉴 선택 처리: 설정 팝업 창 화면 노출

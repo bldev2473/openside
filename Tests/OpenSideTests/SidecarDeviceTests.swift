@@ -41,6 +41,7 @@ final class SidecarReadinessTests: XCTestCase {
 
     struct StubConnector: SidecarConnecting {
         let devices: [SidecarDeviceInfo]
+        func currentSessionInfo() -> SidecarSessionInfo? { nil }
         func getAvailableDevices() -> [SidecarDeviceInfo] { devices }
         func connect(to device: SidecarDeviceInfo, completion: @escaping @Sendable (Result<Void, Error>) -> Void) {}
         func disconnect(completion: @escaping @Sendable (Result<Void, Error>) -> Void) {}
@@ -189,6 +190,7 @@ final class DeviceListRefreshTests: XCTestCase {
     final class CountingConnector: SidecarConnecting, @unchecked Sendable {
         var devices: [SidecarDeviceInfo] = []
         var listCalls = 0
+        func currentSessionInfo() -> SidecarSessionInfo? { nil }
         func getAvailableDevices() -> [SidecarDeviceInfo] {
             listCalls += 1
             return devices
@@ -236,6 +238,7 @@ final class ConnectFailureTests: XCTestCase {
 
     final class ScriptedConnector: SidecarConnecting, @unchecked Sendable {
         var fails = false
+        func currentSessionInfo() -> SidecarSessionInfo? { nil }
         func getAvailableDevices() -> [SidecarDeviceInfo] { [] }
         func connect(to device: SidecarDeviceInfo, completion: @escaping @Sendable (Result<Void, Error>) -> Void) {
             completion(fails ? .failure(NSError(domain: "Test", code: 1)) : .success(()))

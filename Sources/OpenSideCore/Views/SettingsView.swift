@@ -6,14 +6,18 @@ import SwiftUI
 /// 이 앱에서는 비어 있습니다.
 public struct SettingsView<Extra: View>: View {
     @ObservedObject public var languageManager: UserDefaultsLanguageManager
+    /// 세션 지표를 보여주려면 넘깁니다. 없으면 그 섹션이 사라집니다.
+    @ObservedObject public var viewModel: DisplayManagerViewModel
     @AppStorage("launchAtLogin") private var launchAtLogin: Bool = false
 
     private let extraSections: Extra
 
     public init(
+        viewModel: DisplayManagerViewModel,
         languageManager: UserDefaultsLanguageManager = .shared,
         @ViewBuilder extraSections: () -> Extra
     ) {
+        self.viewModel = viewModel
         self.languageManager = languageManager
         self.extraSections = extraSections()
     }
@@ -24,6 +28,16 @@ public struct SettingsView<Extra: View>: View {
         Form {
             Section(strings.generalSection) {
                 Toggle(strings.launchAtLogin, isOn: $launchAtLogin)
+            }
+
+            // 붙어 있을 때만 나옵니다. 세션이 없으면 보여줄 값이 없습니다.
+            if let session = viewModel.sessionInfo {
+                Section(strings.sessionInfoSection) {
+                    LabeledContent(strings.sessionFramerate, value: "\(session.framerate) Hz")
+                    LabeledContent(strings.sessionBitrate, value: session.bitrateText)
+                    LabeledContent(strings.sessionSize, value: session.sizeText)
+                    LabeledContent(strings.sessionHDR, value: session.isHDR ? strings.onWord : strings.offWord)
+                }
             }
 
             Section(strings.languagePicker) {
@@ -49,7 +63,10 @@ public struct SettingsView<Extra: View>: View {
 
 extension SettingsView where Extra == EmptyView {
     /// 추가 섹션이 없는 기본 설정 창
-    public init(languageManager: UserDefaultsLanguageManager = .shared) {
-        self.init(languageManager: languageManager) { EmptyView() }
+    public init(
+        viewModel: DisplayManagerViewModel,
+        languageManager: UserDefaultsLanguageManager = .shared
+    ) {
+        self.init(viewModel: viewModel, languageManager: languageManager) { EmptyView() }
     }
 }

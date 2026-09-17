@@ -146,6 +146,9 @@ public protocol SidecarConnecting: Sendable {
     /// 지정된 사이드카 기기로 연결을 시작합니다.
     func connect(to device: SidecarDeviceInfo, completion: @escaping @Sendable (Result<Void, Error>) -> Void)
 
+    /// 지금 돌고 있는 세션의 지표를 읽습니다. 붙어 있지 않으면 nil.
+    func currentSessionInfo() -> SidecarSessionInfo?
+
     /// 활성화된 사이드카 세션을 종료합니다.
     func disconnect(completion: @escaping @Sendable (Result<Void, Error>) -> Void)
 }

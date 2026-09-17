@@ -36,9 +36,4 @@ public final class SettingsWindowController: NSWindowController {
         window?.center()
         window?.makeKeyAndOrderFront(nil)
     }
-
-    /// 기본 설정 창을 표시합니다.
-    public func showSettingsWindow() {
-        showSettingsWindow(content: SettingsView())
-    }
 }

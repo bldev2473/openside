@@ -62,6 +62,18 @@ public struct MenuBarPopupView: View {
                     ))
                 }
 
+                // 세션 프레임레이트. 무선이 느릴 때 여기서 먼저 드러납니다.
+                if let session = viewModel.sessionInfo {
+                    Text("\(session.framerate) Hz")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(Capsule())
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+
                 // 사이드카 연결 상태 배지
                 HStack(spacing: 4) {
                     Circle()

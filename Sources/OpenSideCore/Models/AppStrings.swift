@@ -24,6 +24,14 @@ public struct LocalizedUIStrings: Sendable {
     public let resolution: String
     /// 복제 중 메인 화면 해상도 라벨. 두 화면이 함께 바뀝니다.
     public let mainResolution: String
+    /// 세션 정보 섹션
+    public let sessionInfoSection: String
+    public let sessionFramerate: String
+    public let sessionBitrate: String
+    public let sessionSize: String
+    public let sessionHDR: String
+    public let onWord: String
+    public let offWord: String
     /// 확장 표시 모드 라벨
     public let extendDisplay: String
     /// 메인 화면 복제 모드 라벨
@@ -61,6 +69,13 @@ extension AppLanguage {
                 noSidecarDevices: "연결 가능한 기기 없음",
                 resolution: "해상도",
                 mainResolution: "메인 해상도",
+                sessionInfoSection: "세션 정보",
+                sessionFramerate: "프레임레이트",
+                sessionBitrate: "전송률",
+                sessionSize: "크기",
+                sessionHDR: "HDR",
+                onWord: "켜짐",
+                offWord: "꺼짐",
                 extendDisplay: "확장",
                 mirrorDisplay: "복제",
                 approximateRemaining: { "약 \($0)" },
@@ -104,6 +119,13 @@ extension AppLanguage {
                 noSidecarDevices: "No devices available",
                 resolution: "Resolution",
                 mainResolution: "Main resolution",
+                sessionInfoSection: "Session",
+                sessionFramerate: "Frame rate",
+                sessionBitrate: "Bit rate",
+                sessionSize: "Size",
+                sessionHDR: "HDR",
+                onWord: "On",
+                offWord: "Off",
                 extendDisplay: "Extend",
                 mirrorDisplay: "Mirror",
                 approximateRemaining: { "about \($0)" },
@@ -147,6 +169,13 @@ extension AppLanguage {
                 noSidecarDevices: "利用可能なデバイスなし",
                 resolution: "解像度",
                 mainResolution: "メインの解像度",
+                sessionInfoSection: "セッション",
+                sessionFramerate: "フレームレート",
+                sessionBitrate: "ビットレート",
+                sessionSize: "サイズ",
+                sessionHDR: "HDR",
+                onWord: "オン",
+                offWord: "オフ",
                 extendDisplay: "拡張",
                 mirrorDisplay: "ミラーリング",
                 approximateRemaining: { "約 \($0)" },
@@ -190,6 +219,13 @@ extension AppLanguage {
                 noSidecarDevices: "无可用设备",
                 resolution: "分辨率",
                 mainResolution: "主屏幕分辨率",
+                sessionInfoSection: "会话",
+                sessionFramerate: "帧率",
+                sessionBitrate: "码率",
+                sessionSize: "尺寸",
+                sessionHDR: "HDR",
+                onWord: "开",
+                offWord: "关",
                 extendDisplay: "扩展",
                 mirrorDisplay: "镜像",
                 approximateRemaining: { "约 \($0)" },

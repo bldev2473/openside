@@ -17,6 +17,8 @@ public final class DisplayManagerViewModel: ObservableObject {
     @Published public private(set) var canToggleHiDPI: Bool = false
     /// iPad 가 메인 화면을 복제하고 있는지. 복제 중에는 배치가 의미를 잃습니다.
     @Published public private(set) var isSidecarMirrored: Bool = false
+    /// 지금 돌고 있는 세션의 지표. 붙어 있지 않으면 nil.
+    @Published public private(set) var sessionInfo: SidecarSessionInfo?
     /// 메인 화면이 고를 수 있는 해상도. 복제 중에만 채웁니다.
     ///
     /// 복제 중에는 두 화면의 해상도가 하나이고 그것을 메인 화면이 정합니다. iPad 쪽 모드를
@@ -162,6 +164,7 @@ public final class DisplayManagerViewModel: ObservableObject {
         }
 
         self.availableSidecarDevices = sidecarConnector.getAvailableDevices()
+        self.sessionInfo = self.isSidecarConnected ? sidecarConnector.currentSessionInfo() : nil
         // 목록에 기기가 남아 있어도 전제 조건이 깨졌으면 연결은 실패하므로 항상 점검합니다.
         self.readinessIssues = self.isSidecarConnected ? [] : readinessChecker.currentIssues()
         self.errorMessage = nil

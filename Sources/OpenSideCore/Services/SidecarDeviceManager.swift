@@ -24,6 +24,25 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
         return cls.perform(sel)?.takeUnretainedValue()
     }
 
+    /// 기기를 가리키는 안정된 식별자.
+    ///
+    /// 이름은 쓰지 않습니다. 사용자가 iPad 이름을 바꾸면 같은 기기가 다른 기기로 보이고,
+    /// 이름이 같은 기기가 둘이면 서로 구별되지 않습니다.
+    ///
+    /// 읽을 수 없으면 nil 을 돌려줍니다. 임의의 값을 지어내면 폴링마다 다른 값이 나와
+    /// 이 식별자를 기억해 두는 쪽이 전부 깨집니다.
+    private func stableIdentifier(of device: AnyObject) -> String? {
+        guard let object = device as? NSObject else { return nil }
+        let idSel = NSSelectorFromString("identifier")
+        guard object.responds(to: idSel),
+              let raw = object.perform(idSel)?.takeUnretainedValue() else {
+            return nil
+        }
+        if let uuid = raw as? UUID { return uuid.uuidString }
+        if let text = raw as? String { return text }
+        return nil
+    }
+
     public func getAvailableDevices() -> [SidecarDeviceInfo] {
         guard let manager = getSharedManager() else {
             return []
@@ -31,42 +50,26 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
 
         let devicesSel = NSSelectorFromString("devices")
         let connectedSel = NSSelectorFromString("connectedDevices")
+        let nameSel = NSSelectorFromString("name")
 
         let rawDevices = (manager.perform(devicesSel)?.takeUnretainedValue() as? [AnyObject]) ?? []
         let rawConnected = (manager.perform(connectedSel)?.takeUnretainedValue() as? [AnyObject]) ?? []
 
-        let connectedNames = Set(rawConnected.compactMap { dev -> String? in
-            let nameSel = NSSelectorFromString("name")
-            return dev.perform(nameSel)?.takeUnretainedValue() as? String
-        })
+        let connectedIDs = Set(rawConnected.compactMap { stableIdentifier(of: $0) })
 
-        var result: [SidecarDeviceInfo] = []
-
-        for dev in rawDevices {
-            let nameSel = NSSelectorFromString("name")
-            let idSel = NSSelectorFromString("identifier")
+        return rawDevices.compactMap { dev -> SidecarDeviceInfo? in
+            // 식별자가 없는 기기는 내보내지 않습니다. 연결 여부도 기억도 식별자에 걸려 있어
+            // 이름만 있는 항목은 목록에 있어도 쓸 수가 없습니다.
+            guard let id = stableIdentifier(of: dev) else { return nil }
 
             let name = (dev.perform(nameSel)?.takeUnretainedValue() as? String) ?? "알 수 없는 기기"
-            let idObj = dev.perform(idSel)?.takeUnretainedValue()
-            let idString: String
-            if let uuid = idObj as? UUID {
-                idString = uuid.uuidString
-            } else if let idObj = idObj {
-                idString = String(describing: idObj)
-            } else {
-                idString = UUID().uuidString
-            }
 
-            let isConnected = connectedNames.contains(name)
-
-            result.append(SidecarDeviceInfo(
-                id: idString,
+            return SidecarDeviceInfo(
+                id: id,
                 name: name,
-                isConnected: isConnected
-            ))
+                isConnected: connectedIDs.contains(id)
+            )
         }
-
-        return result
     }
 
     public func connect(to device: SidecarDeviceInfo, completion: @escaping @Sendable (Result<Void, Error>) -> Void) {

@@ -58,6 +58,15 @@ public protocol DisplayConfiguring: Sendable {
     func isMirroring(displayID: CGDirectDisplayID) -> Bool
 }
 
+/// 이 앱이 만든 디스플레이가 무엇인지 알려줍니다.
+///
+/// 이 라이브러리를 쓰는 앱이 가상 디스플레이를 만들어 iPad 에 복제할 수 있습니다. 그 화면도 비내장이고
+/// 복제에 얽혀 있어 판별 규칙에 그대로 걸립니다. 만든 쪽이 알려줘야 가릴 수 있습니다.
+public protocol ManagedDisplayReporting: AnyObject, Sendable {
+    /// 이 앱이 만들어 띄운 디스플레이. 없으면 nil.
+    var managedDisplayID: CGDirectDisplayID? { get }
+}
+
 /// 디스플레이 설정 변경을 얼마나 오래 유지할지.
 public enum DisplayConfigurationPersistence: Sendable {
     /// 로그아웃하면 원래대로 돌아갑니다.

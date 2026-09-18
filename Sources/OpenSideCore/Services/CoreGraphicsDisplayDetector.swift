@@ -3,7 +3,12 @@ import CoreGraphics
 
 /// macOS CoreGraphics 및 AppKit 기반 디스플레이 감지 서비스 구현체
 public struct CoreGraphicsDisplayDetector: DisplayDetecting {
-    public init() {}
+    /// 이 앱이 만든 디스플레이를 알려주는 쪽. 쓰는 앱이 넣습니다. 안 넣으면 nil 입니다.
+    private let managedDisplays: ManagedDisplayReporting?
+
+    public init(managedDisplays: ManagedDisplayReporting? = nil) {
+        self.managedDisplays = managedDisplays
+    }
 
     public func getActiveDisplays() -> [DisplayInfo] {
         var displays: [DisplayInfo] = []
@@ -56,8 +61,12 @@ public struct CoreGraphicsDisplayDetector: DisplayDetecting {
             // 복제 중에는 NSScreen 이 이 화면을 내놓지 않아 이름을 못 찾습니다. 그러면
             // 이름 판별이 실패하므로 복제 중인 비내장 디스플레이는 사이드카로 봅니다.
             // 이 앱이 복제를 켜는 대상은 사이드카뿐입니다.
-            let isMirrored = CGDisplayMirrorsDisplay(displayID) != kCGNullDirectDisplay
-            let isSidecar = !isBuiltin && (nameLooksLikeSidecar || isMirrored)
+            let mirrorSource = CGDisplayMirrorsDisplay(displayID)
+            let isMirrored = mirrorSource != kCGNullDirectDisplay
+            // 이 앱이 만든 화면은 사이드카가 아닙니다. 그것도 비내장이고 NSScreen 이 이름을
+            // 내놓지 않아 위 규칙에 그대로 걸리므로, 만든 쪽이 알려준 식별자로 먼저 가릅니다.
+            let isOurs = managedDisplays?.managedDisplayID == displayID
+            let isSidecar = !isBuiltin && !isOurs && (nameLooksLikeSidecar || isMirrored)
 
             let info = DisplayInfo(
                 id: displayID,
@@ -67,7 +76,7 @@ public struct CoreGraphicsDisplayDetector: DisplayDetecting {
                 isMain: isMain,
                 isBuiltin: isBuiltin,
                 isSidecar: isSidecar,
-                isMirrored: isMirrored
+                mirrorSourceID: isMirrored ? mirrorSource : nil
             )
             displays.append(info)
         }

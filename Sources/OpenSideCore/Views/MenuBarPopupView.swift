@@ -160,7 +160,10 @@ public struct MenuBarPopupView: View {
             }
 
             // 사이드카 해상도 선택 및 HiDPI 제어. 확장일 때만입니다.
-            if viewModel.sidecarDisplay != nil, !viewModel.isSidecarMirrored {
+            //
+            // 캔버스를 비추는 동안에는 가립니다. 그때 크기를 정하는 것은 설정창의 캔버스
+            // 칸이고, iPad 쪽 모드를 바꿔도 값만 갈라집니다.
+            if viewModel.sidecarDisplay != nil, !viewModel.isSidecarMirrored, !viewModel.isShowingCanvas {
                 HStack(spacing: 6) {
                     Text(strings.resolution)
                         .font(.system(size: 11, weight: .medium))

@@ -18,9 +18,15 @@ public struct DisplayInfo: Identifiable, Equatable, Sendable {
     public let isBuiltin: Bool
     /// 아이패드 사이드카 디스플레이 여부
     public let isSidecar: Bool
+    /// 이 디스플레이가 복제하고 있는 원본의 식별자. 복제 중이 아니면 nil.
+    ///
+    /// 복제 여부만으로는 부족합니다. 이 라이브러리를 쓰는 앱이 만든 캔버스를 비추는 것은 사용자가 보기에
+    /// 확장이고, 메인 화면을 비추는 것은 복제입니다. 무엇을 복제하는지 알아야 그 둘을 가릅니다.
+    public let mirrorSourceID: CGDirectDisplayID?
+
     /// 다른 디스플레이를 복제하고 있는지 여부.
     /// 복제 중에는 bounds 가 원본 디스플레이의 크기를 보고하므로 해상도로 읽으면 안 됩니다.
-    public let isMirrored: Bool
+    public var isMirrored: Bool { mirrorSourceID != nil }
 
     public init(
         id: CGDirectDisplayID,
@@ -30,7 +36,7 @@ public struct DisplayInfo: Identifiable, Equatable, Sendable {
         isMain: Bool,
         isBuiltin: Bool,
         isSidecar: Bool,
-        isMirrored: Bool = false
+        mirrorSourceID: CGDirectDisplayID? = nil
     ) {
         self.id = id
         self.uuid = uuid
@@ -39,7 +45,7 @@ public struct DisplayInfo: Identifiable, Equatable, Sendable {
         self.isMain = isMain
         self.isBuiltin = isBuiltin
         self.isSidecar = isSidecar
-        self.isMirrored = isMirrored
+        self.mirrorSourceID = mirrorSourceID
     }
 }
 

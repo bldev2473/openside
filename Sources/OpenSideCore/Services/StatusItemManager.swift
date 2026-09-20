@@ -89,10 +89,7 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
 
     /// 메뉴바 아이콘 이미지 설정
     private func updateIcon(isConnected: Bool) {
-        statusItem.button?.image = NSImage(
-            systemSymbolName: isConnected ? "display.2" : "display",
-            accessibilityDescription: "OpenSide"
-        )
+        statusItem.button?.image = MenuBarIcon.image(showsSidecar: isConnected)
     }
 
     /// 마우스 클릭 이벤트 처리 (좌클릭: 팝오버 토글, 우클릭/Ctrl+좌클릭: 메뉴 노출)

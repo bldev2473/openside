@@ -191,14 +191,19 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
         )
         menu.delegate = self
 
+        guard let button = statusItem.button else { return }
+
+        // statusItem.menu 에 붙였다 떼는 예전 수법을 쓰지 않습니다. 그렇게 하면 메뉴가 열려
+        // 있는 동안 메뉴바에 빈 항목이 하나 더 생기고, 붙어 있는 동안에는 좌클릭까지 이 메뉴를
+        // 엽니다. 버튼을 기준으로 직접 띄우면 상태 항목을 건드리지 않습니다.
+        //
+        // 기준점은 버튼의 좌측 하단입니다. 메뉴의 좌측 상단이 그 자리에 놓여 아래로 펼쳐집니다.
         isShowingContextMenu = true
-        statusItem.menu = menu
-        statusItem.button?.performClick(nil)
+        menu.popUp(positioning: nil, at: .zero, in: button)
     }
 
-    /// 우클릭 메뉴가 닫힐 때 statusItem.menu를 즉시 초기화하여 좌클릭 팝오버가 정상 작동하도록 복원
+    /// 우클릭 메뉴가 닫히면 좌클릭 팝오버가 다시 동작하도록 표시를 내립니다.
     public func menuDidClose(_ menu: NSMenu) {
-        statusItem.menu = nil
         isShowingContextMenu = false
     }
 

@@ -99,6 +99,9 @@ public final class DisplayManagerViewModel: ObservableObject {
 
     deinit {
         batteryReceiver?.stopListening()
+        // 수신기는 쓰는 쪽에서 싱글턴으로 들어올 수 있습니다. 콜백을 그대로 두면 이 뷰모델이
+        // 사라진 뒤에도 죽은 클로저가 거기 붙어 있습니다.
+        batteryReceiver?.onBatteryUpdate = nil
         if let observer = screenNotificationObserver {
             NotificationCenter.default.removeObserver(observer)
         }

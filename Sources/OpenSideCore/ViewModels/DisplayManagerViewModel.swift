@@ -163,6 +163,10 @@ public final class DisplayManagerViewModel: ObservableObject {
 
         // iPad 가 캔버스를 비추는 것은 복제가 아닙니다. 데스크탑이 캔버스로 늘어나고 iPad 는
         // 그 사본을 보여줄 뿐입니다. 메인 화면을 비출 때만 복제로 봅니다.
+        // 눌러 둔 칸 표시는 실제 배치에서 읽습니다. 저장값을 그대로 켜면, 시스템 설정이나
+        // 다른 빌드에서 화면을 옮겼을 때 엉뚱한 칸이 켜진 채로 남습니다.
+        self.lastAppliedPreset = self.presetMatchingLayout()
+
         self.isShowingCanvas = self.isSidecarShowingCanvas
         // 캔버스를 비추는 동안에는 크기를 캔버스가 정합니다. iPad 자기 모드 목록은 뜻이 없습니다.
         self.availableCanvasSizes = self.isShowingCanvas ? (canvasSizing?.availableCanvasSizes ?? []) : []
@@ -193,6 +197,21 @@ public final class DisplayManagerViewModel: ObservableObject {
         // 목록에 기기가 남아 있어도 전제 조건이 깨졌으면 연결은 실패하므로 항상 점검합니다.
         self.readinessIssues = self.isSidecarConnected ? [] : readinessChecker.currentIssues()
         self.errorMessage = nil
+    }
+
+    /// 지금 배치와 딱 맞는 프리셋. 어느 것과도 안 맞으면 nil(직접 맞춘 자리).
+    private func presetMatchingLayout() -> DisplayArrangementPreset? {
+        guard let main = mainDisplay, let target = arrangementTarget else { return nil }
+
+        return DisplayArrangementPreset.allCases.first { preset in
+            let wanted = calculator.calculateOrigin(
+                mainBounds: main.bounds,
+                targetBounds: target.bounds,
+                preset: preset
+            )
+            return Int32(target.bounds.origin.x.rounded()) == wanted.x
+                && Int32(target.bounds.origin.y.rounded()) == wanted.y
+        }
     }
 
     /// iPad 가 이 앱이 만든 캔버스를 비추고 있는지.
@@ -503,8 +522,11 @@ public final class DisplayManagerViewModel: ObservableObject {
     private func applyArrangement(_ anchor: DisplayAnchor, to target: DisplayInfo) {
         guard let main = mainDisplay else { return }
 
+        // 저장된 프리셋만 봅니다. lastAppliedPreset 은 지금 자리와 맞는 칸이라, 옮기려는
+        // 참에 그것을 근거로 삼으면 제자리에 머무릅니다. 직접 끌어다 놓으면 저장값이 비므로
+        // 저장값이 있다는 것은 사용자가 프리셋을 골랐고 그 뒤로 안 끌었다는 뜻입니다.
         let wanted: TargetDisplayOrigin
-        if let preset = lastAppliedPreset ?? presetManager.loadLastPreset() {
+        if let preset = presetManager.loadLastPreset() {
             wanted = calculator.calculateOrigin(
                 mainBounds: main.bounds,
                 targetBounds: target.bounds,

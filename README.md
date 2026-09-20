@@ -1,6 +1,8 @@
-# OpenSide
-
-Arrange your Sidecar iPad from the macOS menu bar.
+<div align="center">
+  <img src="assets/logo.svg" width="180" height="180" alt="">
+  <h1>OpenSide</h1>
+  <p>Arrange your Sidecar iPad from the macOS menu bar.</p>
+</div>
 
 macOS remembers where your Sidecar display sits, but moving it means opening System
 Settings and dragging a small blue rectangle. OpenSide puts that one job in the menu

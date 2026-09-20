@@ -23,6 +23,10 @@ mkdir -p "${RESOURCES_DIR}"
 # 바이너리 복사
 cp "${ROOT_DIR}/.build/release/${APP_NAME}" "${MACOS_DIR}/${APP_NAME}"
 
+# 아이콘. '정보' 가 띄우는 표준 About 패널이 이것을 보여준다.
+# 로고를 고쳤으면 scripts/make_icon.sh 로 다시 만든다.
+cp "${ROOT_DIR}/assets/AppIcon.icns" "${RESOURCES_DIR}/AppIcon.icns"
+
 # Info.plist 생성 (LSUIElement = true: 메뉴바 상주 앱 설정)
 cat <<EOF > "${CONTENTS_DIR}/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
@@ -33,6 +37,8 @@ cat <<EOF > "${CONTENTS_DIR}/Info.plist"
     <string>${APP_NAME}</string>
     <key>CFBundleIdentifier</key>
     <string>com.openside.app</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleName</key>
     <string>${APP_NAME}</string>
     <key>CFBundleDisplayName</key>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"
+     role="img" aria-label="OpenSide — a MacBook display with an iPad display arranged to its lower right">
+  <title>OpenSide</title>
+
+  <!-- 메뉴바 팝오버의 배치 도식과 같은 색입니다. 테두리는 파랑과 초록 그대로이고,
+       채움은 이 어두운 판 위에 15% 가 얹혔을 때의 결과색을 불투명하게 굳혔습니다.
+       화면은 비치면 안 되므로 알파를 쓰지 않습니다. -->
+
+  <!-- 판. 라이트 테마에서 흰 바탕에 도형만 떠 있으면 눈이 아프므로 아이콘처럼 감쌉니다. -->
+  <rect width="512" height="512" rx="112" fill="#1C1C1E"/>
+  <rect x="0.5" y="0.5" width="511" height="511" rx="111.5"
+        fill="none" stroke="#FFFFFF" stroke-opacity="0.08"/>
+
+  <!-- MacBook: 1512 x 982 를 275 x 178.6 으로 -->
+  <rect x="57.5" y="145.7" width="275" height="178.6" rx="16"
+        fill="#192C40" stroke="#0A84FF" stroke-width="5"/>
+
+  <!-- iPad: 1112 x 834 를 172 x 129 로. 우측 하단에서 50 만큼 겹칩니다. -->
+  <rect x="282.5" y="237.3" width="172" height="129" rx="13"
+        fill="#1F3825" stroke="#32D74B" stroke-width="5"/>
+</svg>

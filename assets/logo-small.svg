@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"
+     role="img" aria-label="OpenSide">
+  <title>OpenSide (small sizes)</title>
+
+  <!-- 16 과 32 픽셀용. logo.svg 를 그 크기로 줄이면 테두리가 0.2px 이 되어 사라집니다.
+       선을 굵히고 도형을 키웠으며, 작은 크기에서 잡티로만 보이는 판 테두리는 뺐습니다.
+       scripts/make_icon.sh 가 이 둘을 섞어 AppIcon.icns 를 만듭니다. -->
+  <rect width="512" height="512" rx="112" fill="#1C1C1E"/>
+  <rect x="47.5" y="139.7" width="295" height="191.6" rx="18"
+        fill="#192C40" stroke="#0A84FF" stroke-width="13"/>
+  <rect x="282.5" y="237.3" width="182" height="136.5" rx="15"
+        fill="#1F3825" stroke="#32D74B" stroke-width="13"/>
+</svg>

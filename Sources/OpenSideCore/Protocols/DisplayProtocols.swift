@@ -67,6 +67,22 @@ public protocol ManagedDisplayReporting: AnyObject, Sendable {
     var managedDisplayID: CGDirectDisplayID? { get }
 }
 
+/// 캔버스를 쓰는 동안 화면 크기를 정하는 쪽. 쓰는 앱이 넣습니다. 안 넣으면 nil 입니다.
+///
+/// 캔버스는 고를 수 있는 크기 목록이 따로 있습니다. 그리고 크기를 바꾸는 방법도 다릅니다 —
+/// 화면의 모드를 바꾸는 것이 아니라 캔버스를 그 크기로 다시 만듭니다. 가상 디스플레이는
+/// 모드를 한 번이라도 바꾸면 놓아 주어도 프로세스가 끝날 때까지 화면이 남습니다.
+public protocol CanvasSizing: AnyObject, Sendable {
+    /// 고를 수 있는 크기.
+    var availableCanvasSizes: [DisplayResolutionMode] { get }
+
+    /// 지금 쓰는 크기.
+    var currentCanvasSize: DisplayResolutionMode? { get }
+
+    /// 크기를 바꿉니다. 캔버스를 다시 만듭니다.
+    func selectCanvasSize(_ mode: DisplayResolutionMode)
+}
+
 /// 디스플레이 설정 변경을 얼마나 오래 유지할지.
 public enum DisplayConfigurationPersistence: Sendable {
     /// 로그아웃하면 원래대로 돌아갑니다.

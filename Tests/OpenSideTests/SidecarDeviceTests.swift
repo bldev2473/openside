@@ -490,9 +490,9 @@ final class ManagedDisplayTests: XCTestCase {
         XCTAssertEqual(configurator.mirrorRequests, [nil], "캔버스가 없으면 복제만 푼다")
     }
 
-    /// 손으로 끌어 둔 자리에는 저장된 프리셋이 없다. 그 좌표를 그대로 캔버스가 이어받아야 한다.
+    /// 손으로 끌어 둔 자리에는 저장된 프리셋이 없다. 앵커를 캔버스 크기로 풀어 써야 한다.
     @MainActor
-    func testCanvasInheritsAHandPlacedOrigin() {
+    func testCanvasInheritsAHandPlacedSpot() {
         let configurator = RecordingConfigurator()
         let presets = CustomArrangementPersistenceTests.SpyPresetManager()
         let viewModel = DisplayManagerViewModel(
@@ -502,9 +502,13 @@ final class ManagedDisplayTests: XCTestCase {
             readinessChecker: QuietChecker(),
             managedDisplays: StubManaged(3)
         )
-        viewModel.inheritArrangement(from: TargetDisplayOrigin(x: -1112, y: 40))
+        // 왼쪽 변 한가운데에 두었던 자리.
+        viewModel.inheritArrangement(from: DisplayAnchor(edge: .left, ratio: 0.5))
+
         XCTAssertEqual(configurator.movedIDs, [3], "캔버스(3)를 옮겨야 한다")
-        XCTAssertEqual(configurator.movedOrigins, [TargetDisplayOrigin(x: -1112, y: 40)])
+        // 캔버스는 834x1112 다. 왼쪽 변에 붙고 중심이 주 화면의 절반 높이에 와야 한다.
+        XCTAssertEqual(configurator.movedOrigins.first?.x, -834)
+        XCTAssertEqual(Double(configurator.movedOrigins.first?.y ?? 0) + 1112 / 2, 982 * 0.5, accuracy: 1)
     }
 
     /// 프리셋이 있으면 캔버스 크기로 다시 계산한다. iPad 와 캔버스의 크기가 다르면
@@ -521,10 +525,11 @@ final class ManagedDisplayTests: XCTestCase {
             readinessChecker: QuietChecker(),
             managedDisplays: StubManaged(3)
         )
-        viewModel.inheritArrangement(from: TargetDisplayOrigin(x: -1112, y: 40))
+        viewModel.inheritArrangement(from: DisplayAnchor(edge: .left, ratio: 0.5))
+
         XCTAssertEqual(configurator.movedIDs, [3], "캔버스(3)를 옮겨야 한다")
-        XCTAssertNotEqual(configurator.movedOrigins, [TargetDisplayOrigin(x: -1112, y: 40)],
-                          "받은 좌표가 아니라 프리셋으로 계산한 자리여야 한다")
+        XCTAssertEqual(configurator.movedOrigins.first?.x, 1512,
+                       "앵커가 왼쪽이어도 프리셋이 오른쪽이면 프리셋을 따라야 한다")
         XCTAssertEqual(presets.stored, .rightCenter, "이어받기가 프리셋을 지우면 안 된다")
     }
 
@@ -584,8 +589,8 @@ final class ManagedDisplayTests: XCTestCase {
         viewModel.toggleMirroring(false)
 
         XCTAssertEqual(configurator.movedIDs, [3], "캔버스(3)를 되돌려야 한다")
-        XCTAssertEqual(configurator.movedOrigins, [TargetDisplayOrigin(x: -2000, y: 120)],
-                       "복제로 가기 전 자리로 돌아와야 한다")
+        XCTAssertEqual(configurator.movedOrigins.first?.x, -1112,
+                       "복제로 가기 전처럼 주 화면 왼쪽에 붙어야 한다")
     }
 
     /// 캔버스에 복제를 걸면서 자리도 같이 잡아야 한다. 걸어 두고 나중에 옮기면 그 사이
@@ -603,10 +608,10 @@ final class ManagedDisplayTests: XCTestCase {
             managedDisplays: StubManaged(3)
         )
 
-        _ = viewModel.mirrorSidecar(onto: 3, placing: TargetDisplayOrigin(x: 1512, y: 465))
+        _ = viewModel.mirrorSidecar(onto: 3, placing: DisplayAnchor(edge: .right, ratio: 0.5))
 
         XCTAssertEqual(configurator.mirrorRequests, [3])
         XCTAssertEqual(configurator.movedIDs, [3], "복제를 건 그 자리에서 캔버스를 세워야 한다")
-        XCTAssertEqual(configurator.movedOrigins, [TargetDisplayOrigin(x: 1512, y: 465)])
+        XCTAssertEqual(configurator.movedOrigins.first?.x, 1512, "주 화면 오른쪽에 붙어야 한다")
     }
 }

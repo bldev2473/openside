@@ -159,10 +159,38 @@ public struct MenuBarPopupView: View {
                 .padding(.horizontal, 4)
             }
 
-            // 사이드카 해상도 선택 및 HiDPI 제어. 확장일 때만입니다.
+            // 해상도 선택. 확장일 때만입니다.
             //
-            // 캔버스를 비추는 동안에는 가립니다. 그때 크기를 정하는 것은 설정창의 캔버스
-            // 칸이고, iPad 쪽 모드를 바꿔도 값만 갈라집니다.
+            // 캔버스를 비추는 동안에는 캔버스 크기를 고릅니다. 화면에 실제로 그려지는 크기를
+            // 정하는 것이 캔버스이고, iPad 쪽 모드를 바꿔 봐야 값만 갈라집니다. HiDPI 는
+            // 내놓지 않습니다. 캔버스는 언제나 논리 크기의 두 배로 그립니다.
+            if viewModel.sidecarDisplay != nil, !viewModel.isSidecarMirrored, viewModel.isShowingCanvas {
+                HStack(spacing: 6) {
+                    Text(strings.resolution)
+                        .font(.system(size: 11, weight: .medium))
+
+                    Spacer()
+
+                    Picker("", selection: Binding<DisplayResolutionMode?>(
+                        get: { viewModel.currentCanvasSize },
+                        set: { mode in
+                            if let mode { viewModel.changeCanvasSize(mode) }
+                        }
+                    )) {
+                        ForEach(viewModel.availableCanvasSizes) { mode in
+                            Text("\(mode.width) × \(mode.height)")
+                                .tag(DisplayResolutionMode?.some(mode))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .controlSize(.small)
+                    .fixedSize()
+                }
+                .padding(.horizontal, 4)
+            }
+
+            // 사이드카 자기 해상도 선택 및 HiDPI 제어. 캔버스를 안 쓸 때입니다.
             if viewModel.sidecarDisplay != nil, !viewModel.isSidecarMirrored, !viewModel.isShowingCanvas {
                 HStack(spacing: 6) {
                     Text(strings.resolution)

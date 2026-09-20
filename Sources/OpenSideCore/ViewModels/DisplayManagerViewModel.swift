@@ -19,6 +19,10 @@ public final class DisplayManagerViewModel: ObservableObject {
     @Published public private(set) var isSidecarMirrored: Bool = false
     /// iPad 가 이 앱이 만든 캔버스를 비추고 있는지. 이때 해상도는 캔버스가 정합니다.
     @Published public private(set) var isShowingCanvas: Bool = false
+    /// 캔버스를 비추는 동안 고를 수 있는 크기. 그 밖에는 비어 있습니다.
+    @Published public private(set) var availableCanvasSizes: [DisplayResolutionMode] = []
+    /// 캔버스가 지금 쓰는 크기.
+    @Published public private(set) var currentCanvasSize: DisplayResolutionMode?
     /// 지금 돌고 있는 세션의 지표. 붙어 있지 않으면 nil.
     @Published public private(set) var sessionInfo: SidecarSessionInfo?
     /// 메인 화면이 고를 수 있는 해상도. 복제 중에만 채웁니다.
@@ -52,6 +56,8 @@ public final class DisplayManagerViewModel: ObservableObject {
     private let batteryReceiver: BatteryReceiving?
     /// 이 앱이 만든 디스플레이를 알려주는 쪽. 쓰는 앱이 넣습니다. 안 넣으면 nil 입니다.
     private let managedDisplays: ManagedDisplayReporting?
+    /// 캔버스 크기를 정하는 쪽. 쓰는 앱이 넣습니다. 안 넣으면 nil 입니다.
+    private let canvasSizing: CanvasSizing?
     private let remainingTimeEstimator: RemainingTimeEstimating?
 
     private var screenNotificationObserver: NSObjectProtocol?
@@ -69,7 +75,9 @@ public final class DisplayManagerViewModel: ObservableObject {
         // 남은 시간 추정도 쓰는 앱이 넣습니다.
         remainingTimeEstimator: RemainingTimeEstimating? = nil,
         // 이 앱이 만든 디스플레이도 쓰는 앱이 넣습니다.
-        managedDisplays: ManagedDisplayReporting? = nil
+        managedDisplays: ManagedDisplayReporting? = nil,
+        // 캔버스 크기 목록도 쓰는 앱이 넣습니다.
+        canvasSizing: CanvasSizing? = nil
     ) {
         self.detector = detector
         self.calculator = calculator
@@ -81,6 +89,7 @@ public final class DisplayManagerViewModel: ObservableObject {
         self.batteryReceiver = batteryReceiver
         self.remainingTimeEstimator = remainingTimeEstimator
         self.managedDisplays = managedDisplays
+        self.canvasSizing = canvasSizing
         self.lastAppliedPreset = presetManager.loadLastPreset()
 
         setupBatteryReceiver()
@@ -152,6 +161,9 @@ public final class DisplayManagerViewModel: ObservableObject {
         // iPad 가 캔버스를 비추는 것은 복제가 아닙니다. 데스크탑이 캔버스로 늘어나고 iPad 는
         // 그 사본을 보여줄 뿐입니다. 메인 화면을 비출 때만 복제로 봅니다.
         self.isShowingCanvas = self.isSidecarShowingCanvas
+        // 캔버스를 비추는 동안에는 크기를 캔버스가 정합니다. iPad 자기 모드 목록은 뜻이 없습니다.
+        self.availableCanvasSizes = self.isShowingCanvas ? (canvasSizing?.availableCanvasSizes ?? []) : []
+        self.currentCanvasSize = self.isShowingCanvas ? canvasSizing?.currentCanvasSize : nil
         self.isSidecarMirrored = (self.sidecarDisplay?.isMirrored ?? false) && !self.isShowingCanvas
 
         if self.isSidecarMirrored, let main = self.mainDisplay {
@@ -212,6 +224,12 @@ public final class DisplayManagerViewModel: ObservableObject {
         self.availableSidecarDevices = sidecarConnector.getAvailableDevices()
     }
 
+    /// 캔버스 크기를 바꿉니다. 캔버스를 그 크기로 다시 만듭니다.
+    public func changeCanvasSize(_ mode: DisplayResolutionMode) {
+        canvasSizing?.selectCanvasSize(mode)
+        refreshAfterModeChange()
+    }
+
     /// 현재 해상도에서 HiDPI 모드 활성화 여부를 토글합니다.
     public func toggleHiDPI(_ enabled: Bool) {
         guard let sidecar = sidecarDisplay else { return }
@@ -230,12 +248,12 @@ public final class DisplayManagerViewModel: ObservableObject {
     ///
     /// `toggleMirroring` 은 메인 화면만 대상으로 삼습니다. 이쪽은 이 라이브러리를 쓰는 앱이 만든
     /// 캔버스처럼 다른 화면에 복제할 때 씁니다.
-    /// - Parameter origin: 복제를 건 뒤 그 원본을 세울 자리. 나중에 옮기면 그 사이 iPad 에
+    /// - Parameter anchor: 복제를 건 뒤 그 원본을 세울 자리. 나중에 옮기면 그 사이 iPad 에
     ///   macOS 가 정한 자리가 보이므로, 같은 호출 안에서 처리합니다.
     @discardableResult
     public func mirrorSidecar(
         onto masterID: CGDirectDisplayID?,
-        placing origin: TargetDisplayOrigin? = nil
+        placing anchor: DisplayAnchor? = nil
     ) -> Bool {
         guard let sidecar = sidecarDisplay else {
             errorMessage = "연결된 사이드카 디스플레이가 없습니다."
@@ -247,9 +265,9 @@ public final class DisplayManagerViewModel: ObservableObject {
             self.errorMessage = nil
             // 화면 목록이 아직 옛 상태라 arrangementTarget 을 믿을 수 없습니다. 방금 복제를
             // 건 원본을 대상으로 못 박습니다.
-            if let origin, let master = masterID,
+            if let anchor, let master = masterID,
                let target = displays.first(where: { $0.id == master }) {
-                applyArrangement(origin, to: target)
+                applyArrangement(anchor, to: target)
             }
             refreshAfterModeChange()
             return true
@@ -280,10 +298,8 @@ public final class DisplayManagerViewModel: ObservableObject {
 
         // macOS 는 복제를 켜고 끌 때마다 화면 자리를 다시 잡습니다. 넘어가기 전 자리를
         // 적어 두었다가 확장으로 돌아올 때 되돌립니다.
-        if enable {
-            pendingArrangement = arrangementTarget.map {
-                TargetDisplayOrigin(x: Int32($0.bounds.origin.x), y: Int32($0.bounds.origin.y))
-            }
+        if enable, let target = arrangementTarget {
+            pendingArrangement = DisplayAnchor.from(mainBounds: main.bounds, targetBounds: target.bounds)
         }
 
         // 로그아웃하면 확장으로 돌아갑니다. 영구로 쓰면 macOS 가 이 디스플레이의 복제
@@ -305,9 +321,9 @@ public final class DisplayManagerViewModel: ObservableObject {
             //
             // 여기서는 화면 목록이 아직 옛 상태라 arrangementTarget 을 믿을 수 없습니다.
             // 위에서 이미 찾아 둔 캔버스를 대상으로 못 박습니다.
-            if !enable, let canvas, let origin = pendingArrangement {
+            if !enable, let canvas, let anchor = pendingArrangement {
                 pendingArrangement = nil
-                applyArrangement(origin, to: canvas)
+                applyArrangement(anchor, to: canvas)
             }
 
             // 복제를 켜고 끄면 디스플레이 구성이 통째로 다시 섭니다.
@@ -465,31 +481,34 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 둔 배치가 사라집니다. 프리셋이 있으면 캔버스 크기로 다시 계산합니다. 크기가 달라졌는데
     /// 좌표만 옮기면 프리셋이 뜻하던 자리에서 어긋나기 때문입니다. 손으로 끌어 둔 자리면
     /// 저장된 프리셋이 없으므로 받은 좌표를 그대로 씁니다.
-    public func inheritArrangement(from origin: TargetDisplayOrigin) {
-        if let preset = lastAppliedPreset ?? presetManager.loadLastPreset() {
-            applyPreset(preset)
+    public func inheritArrangement(from anchor: DisplayAnchor) {
+        guard let target = arrangementTarget else {
+            errorMessage = "연결된 사이드카 디스플레이가 없습니다."
             return
         }
-        moveArrangementTarget(to: origin)
+        applyArrangement(anchor, to: target)
     }
 
     /// 복제로 넘어가기 전 배치 대상이 서 있던 자리. 확장으로 돌아올 때 되돌립니다.
-    private var pendingArrangement: TargetDisplayOrigin?
+    private var pendingArrangement: DisplayAnchor?
 
     /// 지정한 화면에 배치를 적용합니다.
     ///
     /// 프리셋이 있으면 그 화면의 크기로 다시 계산합니다. 없으면(손으로 끌어 둔 자리면)
-    /// 받은 좌표를 그대로 씁니다.
-    private func applyArrangement(_ origin: TargetDisplayOrigin, to target: DisplayInfo) {
+    /// 앵커를 그 화면의 크기로 풀어 씁니다. 어느 쪽이든 좌표를 그대로 옮기지 않습니다.
+    /// 캔버스는 iPad 와 크기가 다르므로 좌표를 옮기면 자리가 어긋납니다.
+    private func applyArrangement(_ anchor: DisplayAnchor, to target: DisplayInfo) {
+        guard let main = mainDisplay else { return }
+
         let wanted: TargetDisplayOrigin
-        if let preset = lastAppliedPreset ?? presetManager.loadLastPreset(), let main = mainDisplay {
+        if let preset = lastAppliedPreset ?? presetManager.loadLastPreset() {
             wanted = calculator.calculateOrigin(
                 mainBounds: main.bounds,
                 targetBounds: target.bounds,
                 preset: preset
             )
         } else {
-            wanted = origin
+            wanted = anchor.origin(mainBounds: main.bounds, targetBounds: target.bounds)
         }
 
         if case .failure(let error) = configurator.configureDisplayOrigin(displayID: target.id, origin: wanted) {

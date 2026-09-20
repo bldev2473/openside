@@ -7,7 +7,7 @@ Settings and dragging a small blue rectangle. OpenSide puts that one job in the 
 bar: pick a position, change the resolution, connect or disconnect — without leaving
 what you were doing.
 
-> **Screenshot goes here.** Menu bar popover with the display visualiser and preset grid.
+![The OpenSide popover: extend or mirror, the display layout, the resolution row, and the eight arrangement presets](assets/image.png)
 
 ## What it does
 

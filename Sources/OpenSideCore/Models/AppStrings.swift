@@ -14,6 +14,8 @@ public struct LocalizedUIStrings: Sendable {
     public let quitOpenSide: String
     public let generalSection: String
     public let launchAtLogin: String
+    /// 등록은 됐지만 시스템 설정에서 켜 줘야 할 때
+    public let launchAtLoginNeedsApproval: String
     public let languagePicker: String
     public let settingsTitle: String
     /// iPad 배터리 배지 툴팁. 인자는 마지막 갱신 시각 표기
@@ -63,6 +65,7 @@ extension AppLanguage {
                 quitOpenSide: "OpenSide 종료",
                 generalSection: "일반",
                 launchAtLogin: "로그인 시 자동 실행",
+                launchAtLoginNeedsApproval: "시스템 설정 > 일반 > 로그인 항목에서 켜 주세요",
                 languagePicker: "언어",
                 settingsTitle: "설정",
                 iPadBatteryTooltip: { "iPad 배터리 · 마지막 갱신 \($0)" },
@@ -113,6 +116,7 @@ extension AppLanguage {
                 quitOpenSide: "Quit OpenSide",
                 generalSection: "General",
                 launchAtLogin: "Launch at Login",
+                launchAtLoginNeedsApproval: "Turn it on in System Settings > General > Login Items",
                 languagePicker: "Language",
                 settingsTitle: "Settings",
                 iPadBatteryTooltip: { "iPad battery · Last updated \($0)" },
@@ -163,6 +167,7 @@ extension AppLanguage {
                 quitOpenSide: "OpenSideを終了",
                 generalSection: "一般",
                 launchAtLogin: "ログイン時に自動起動",
+                launchAtLoginNeedsApproval: "システム設定 > 一般 > ログイン項目 で有効にしてください",
                 languagePicker: "言語",
                 settingsTitle: "設定",
                 iPadBatteryTooltip: { "iPad バッテリー · 最終更新 \($0)" },
@@ -213,6 +218,7 @@ extension AppLanguage {
                 quitOpenSide: "退出 OpenSide",
                 generalSection: "通用",
                 launchAtLogin: "开机自动启动",
+                launchAtLoginNeedsApproval: "请在系统设置 > 通用 > 登录项中开启",
                 languagePicker: "语言",
                 settingsTitle: "设置",
                 iPadBatteryTooltip: { "iPad 电量 · 最后更新 \($0)" },

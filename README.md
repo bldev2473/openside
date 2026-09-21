@@ -74,6 +74,11 @@ go through CoreGraphics.
 Because it depends on a private framework, OpenSide cannot ship on the Mac App Store
 and is distributed directly.
 
+## Security
+
+[SECURITY.md](SECURITY.md) lists what the app can reach, and how to check that a
+download came from here.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

@@ -11,8 +11,6 @@ public enum DisplayOperationFailure: Equatable, Sendable {
     case noMainDisplay
     /// CoreGraphics 가 화면 구성을 거부함.
     case configuration(DisplayConfigurationError)
-    /// 시스템이 낸 오류. 이미 사용자 언어로 적혀 있으므로 그대로 보여줍니다.
-    case system(String)
 
     /// 고른 언어로 읽을 문장.
     public func message(_ strings: LocalizedUIStrings) -> String {
@@ -20,7 +18,6 @@ public enum DisplayOperationFailure: Equatable, Sendable {
         case .noSidecarDisplay: return strings.noSidecarDisplayError
         case .noMainDisplay: return strings.noMainDisplayError
         case .configuration(let error): return strings.displayConfigurationError(error)
-        case .system(let description): return description
         }
     }
 }

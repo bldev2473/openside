@@ -47,16 +47,12 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 마지막 조작이 실패한 까닭. 완성된 문장이 아니라 갈래를 들어, 화면이 고른 언어로 씁니다.
     @Published public private(set) var failure: DisplayOperationFailure?
 
-    /// 던져진 오류를 갈래로 바꿔 기록합니다.
+    /// CoreGraphics 가 거부한 것을 기록합니다.
     ///
-    /// CoreGraphics 가 거부한 것은 우리가 문장을 만들 수 있으므로 갈래로 들고, 그 밖의 오류는
-    /// 시스템이 이미 사용자 언어로 적어 주므로 그대로 씁니다.
-    private func record(_ error: Error) {
-        if let configuration = error as? DisplayConfigurationError {
-            failure = .configuration(configuration)
-        } else {
-            failure = .system(error.localizedDescription)
-        }
+    /// 갈래를 그대로 들어 화면이 언어에 맞는 문장을 만들게 합니다. 인자를 Error 로 열어 두면
+    /// 갈래를 잃고 영어 문장이 화면에 그대로 나가도 컴파일러가 잡아 주지 못합니다.
+    private func record(_ error: DisplayConfigurationError) {
+        failure = .configuration(error)
     }
 
     private let detector: DisplayDetecting

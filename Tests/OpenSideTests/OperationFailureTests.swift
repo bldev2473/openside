@@ -15,6 +15,52 @@ final class OperationFailureTests: XCTestCase {
         func getMainDisplay() -> DisplayInfo? { nil }
     }
 
+    /// 맥과 iPad 가 둘 다 있는 평소 상태.
+    private struct BothDisplaysDetector: DisplayDetecting {
+        static let main = DisplayInfo(
+            id: 1, uuid: "main", name: "Built-in",
+            bounds: CGRect(x: 0, y: 0, width: 1512, height: 982),
+            isMain: true, isBuiltin: true, isSidecar: false
+        )
+        static let sidecar = DisplayInfo(
+            id: 2, uuid: "pad", name: "iPad",
+            bounds: CGRect(x: 1512, y: 0, width: 1112, height: 834),
+            isMain: false, isBuiltin: false, isSidecar: true
+        )
+        func getActiveDisplays() -> [DisplayInfo] { [Self.main, Self.sidecar] }
+        func getSidecarDisplay() -> DisplayInfo? { Self.sidecar }
+        func getMainDisplay() -> DisplayInfo? { Self.main }
+    }
+
+    /// CoreGraphics 가 좌표 변경을 거부하는 상황.
+    private struct RefusingConfigurator: DisplayConfiguring {
+        func configureDisplayOrigin(
+            displayID: CGDirectDisplayID, origin: TargetDisplayOrigin
+        ) -> Result<Void, DisplayConfigurationError> {
+            .failure(.configureOriginFailed(code: 1002))
+        }
+        func configureMirroring(
+            displayID: CGDirectDisplayID, mirrorOf masterID: CGDirectDisplayID?,
+            persistence: DisplayConfigurationPersistence
+        ) -> Result<Void, DisplayConfigurationError> { .success(()) }
+        func isMirroring(displayID: CGDirectDisplayID) -> Bool { false }
+    }
+
+    /// 거부하다가 받아들이도록 바꿀 수 있는 configurator.
+    private final class SwitchableConfigurator: DisplayConfiguring, @unchecked Sendable {
+        var refuses = true
+        func configureDisplayOrigin(
+            displayID: CGDirectDisplayID, origin: TargetDisplayOrigin
+        ) -> Result<Void, DisplayConfigurationError> {
+            refuses ? .failure(.configureOriginFailed(code: 1002)) : .success(())
+        }
+        func configureMirroring(
+            displayID: CGDirectDisplayID, mirrorOf masterID: CGDirectDisplayID?,
+            persistence: DisplayConfigurationPersistence
+        ) -> Result<Void, DisplayConfigurationError> { .success(()) }
+        func isMirroring(displayID: CGDirectDisplayID) -> Bool { false }
+    }
+
     /// 맥 화면만 있는 상태. iPad 를 붙이지 않은 평소 모습이다.
     private struct MainOnlyDetector: DisplayDetecting {
         static let main = DisplayInfo(
@@ -93,13 +139,6 @@ final class OperationFailureTests: XCTestCase {
         }
     }
 
-    /// 시스템이 낸 오류는 그대로 보여준다. macOS 가 이미 사용자 언어로 적어 준다.
-    func testSystemFailureKeepsItsOwnWording() {
-        let failure = DisplayOperationFailure.system("The display is busy.")
-        for language in AppLanguage.allCases {
-            XCTAssertEqual(failure.message(language.strings), "The display is busy.")
-        }
-    }
 
     /// iPad 가 없으면 그 갈래를 든다. 문장이 아니라 갈래다.
     @MainActor
@@ -111,6 +150,48 @@ final class OperationFailureTests: XCTestCase {
         )
         viewModel.applyPreset(.rightTop)
         XCTAssertEqual(viewModel.failure, .noSidecarDisplay)
+    }
+
+    /// CoreGraphics 가 거부하면 그 갈래가 화면까지 닿아야 한다.
+    ///
+    /// 문구가 네 언어로 있는지만 보면 부족하다. 뷰 모델이 갈래를 잃고 오류 문장을 그대로
+    /// 넘기면, 한국어를 고른 사용자가 영어 줄을 보게 된다.
+    @MainActor
+    func testARefusedConfigurationReachesTheUser() {
+        let viewModel = DisplayManagerViewModel(
+            detector: BothDisplaysDetector(),
+            configurator: RefusingConfigurator(),
+            sidecarConnector: SilentConnector(),
+            readinessChecker: SilentChecker()
+        )
+        viewModel.applyPreset(.rightTop)
+        XCTAssertEqual(viewModel.failure, .configuration(.configureOriginFailed(code: 1002)))
+
+        let korean = viewModel.failure?.message(AppLanguage.korean.strings) ?? ""
+        XCTAssertTrue(korean.contains("1002"))
+        XCTAssertFalse(korean.contains("Could not"), "한국어인데 영어 문장이 나왔다")
+    }
+
+    /// 다시 해서 됐으면 오류 줄이 사라져야 한다.
+    ///
+    /// 남겨 두면 이미 해결된 고장을 계속 알리는 셈이 된다. 사용자는 무엇이 지금 문제인지
+    /// 가릴 수 없다.
+    @MainActor
+    func testASuccessfulRetryClearsTheFailure() {
+        let configurator = SwitchableConfigurator()
+        let viewModel = DisplayManagerViewModel(
+            detector: BothDisplaysDetector(),
+            configurator: configurator,
+            sidecarConnector: SilentConnector(),
+            readinessChecker: SilentChecker()
+        )
+
+        viewModel.applyPreset(.rightTop)
+        XCTAssertNotNil(viewModel.failure, "거부당했는데 아무것도 안 남았다")
+
+        configurator.refuses = false
+        viewModel.applyPreset(.rightTop)
+        XCTAssertNil(viewModel.failure, "됐는데 오류 줄이 남아 있다")
     }
 
     /// 맥 화면조차 못 읽으면 다른 갈래를 든다. 두 실패를 뭉뚱그리면 원인이 사라진다.

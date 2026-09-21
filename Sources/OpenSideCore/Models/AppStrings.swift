@@ -44,7 +44,7 @@ public struct LocalizedUIStrings: Sendable {
     public let readinessHint: @Sendable (SidecarReadinessIssue) -> String
     /// 전제 조건 활성화를 권하는 안내 문구
     public let readinessCallToAction: String
-    /// 사이드카 화면을 찾지 못해 조작을 못 했을 때
+    /// Sidecar 화면을 찾지 못해 조작을 못 했을 때
     public let noSidecarDisplayError: String
     /// 메인 화면을 찾지 못해 조작을 못 했을 때
     public let noMainDisplayError: String
@@ -95,7 +95,7 @@ extension AppLanguage {
                     }
                 },
                 readinessCallToAction: "원활한 동작을 위해 활성화해주세요",
-                noSidecarDisplayError: "연결된 사이드카 디스플레이가 없습니다",
+                noSidecarDisplayError: "연결된 Sidecar 디스플레이가 없습니다",
                 noMainDisplayError: "메인 디스플레이를 찾을 수 없습니다",
                 displayConfigurationError: { error in
                     switch error {
@@ -217,7 +217,7 @@ extension AppLanguage {
                     }
                 },
                 readinessCallToAction: "安定した動作のために有効にしてください",
-                noSidecarDisplayError: "接続されている Sidecar ディスプレイがありません",
+                noSidecarDisplayError: "接続されているSidecarディスプレイがありません",
                 noMainDisplayError: "メインディスプレイが見つかりません",
                 displayConfigurationError: { error in
                     switch error {
@@ -278,7 +278,7 @@ extension AppLanguage {
                     }
                 },
                 readinessCallToAction: "请启用以确保正常运行",
-                noSidecarDisplayError: "没有已连接的随航显示器",
+                noSidecarDisplayError: "没有已连接的“随航”显示器",
                 noMainDisplayError: "找不到主显示器",
                 displayConfigurationError: { error in
                     switch error {

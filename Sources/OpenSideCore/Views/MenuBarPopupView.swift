@@ -347,8 +347,8 @@ public struct MenuBarPopupView: View {
             }
 
             // 오류 메시지 표시
-            if let error = viewModel.errorMessage {
-                Text(error)
+            if let failure = viewModel.failure {
+                Text(failure.message(strings))
                     .font(.system(size: 10))
                     .foregroundStyle(.red)
                     .frame(maxWidth: .infinity, alignment: .leading)

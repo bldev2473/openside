@@ -62,7 +62,7 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
             // 이름만 있는 항목은 목록에 있어도 쓸 수가 없습니다.
             guard let id = stableIdentifier(of: dev) else { return nil }
 
-            let name = (dev.perform(nameSel)?.takeUnretainedValue() as? String) ?? "알 수 없는 기기"
+            let name = (dev.perform(nameSel)?.takeUnretainedValue() as? String) ?? "Unknown Device"
 
             return SidecarDeviceInfo(
                 id: id,
@@ -74,7 +74,7 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
 
     public func connect(to device: SidecarDeviceInfo, completion: @escaping @Sendable (Result<Void, Error>) -> Void) {
         guard let manager = getSharedManager() else {
-            completion(.failure(NSError(domain: "OpenSide", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sidecar 서비스를 로드할 수 없습니다."])))
+            completion(.failure(NSError(domain: "OpenSide", code: -1, userInfo: [NSLocalizedDescriptionKey: "The Sidecar service could not be loaded."])))
             return
         }
 
@@ -82,7 +82,7 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
 
         // 이름이 아니라 식별자로 찾습니다. 이름이 같은 iPad 가 둘이면 이름으로는 못 가립니다.
         guard let targetDev = rawDevices.first(where: { stableIdentifier(of: $0) == device.id }) else {
-            completion(.failure(NSError(domain: "OpenSide", code: -2, userInfo: [NSLocalizedDescriptionKey: "연결할 기기를 찾을 수 없습니다: \(device.name)"])))
+            completion(.failure(NSError(domain: "OpenSide", code: -2, userInfo: [NSLocalizedDescriptionKey: "No such device to connect to: \(device.name)"])))
             return
         }
 
@@ -93,7 +93,7 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
         let connectSel = NSSelectorFromString("connectToDevice:completion:")
         guard manager.responds(to: connectSel),
               let method = class_getInstanceMethod(type(of: manager), connectSel) else {
-            completion(.failure(NSError(domain: "OpenSide", code: -3, userInfo: [NSLocalizedDescriptionKey: "Sidecar 연결 메서드를 찾을 수 없습니다."])))
+            completion(.failure(NSError(domain: "OpenSide", code: -3, userInfo: [NSLocalizedDescriptionKey: "The Sidecar connect method could not be found."])))
             return
         }
         typealias PlainConnect = @convention(c) (AnyObject, Selector, AnyObject, AnyObject) -> Void
@@ -137,7 +137,7 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
 
     public func disconnect(completion: @escaping @Sendable (Result<Void, Error>) -> Void) {
         guard let manager = getSharedManager() else {
-            completion(.failure(NSError(domain: "OpenSide", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sidecar 서비스를 로드할 수 없습니다."])))
+            completion(.failure(NSError(domain: "OpenSide", code: -1, userInfo: [NSLocalizedDescriptionKey: "The Sidecar service could not be loaded."])))
             return
         }
 
@@ -151,13 +151,13 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
 
         let disconnectSel = NSSelectorFromString("disconnectFromDevice:completion:")
         guard manager.responds(to: disconnectSel) else {
-            completion(.failure(NSError(domain: "OpenSide", code: -3, userInfo: [NSLocalizedDescriptionKey: "Sidecar 연결 해제 메서드를 찾을 수 없습니다."])))
+            completion(.failure(NSError(domain: "OpenSide", code: -3, userInfo: [NSLocalizedDescriptionKey: "The Sidecar disconnect method could not be found."])))
             return
         }
 
         typealias DisconnectFunc = @convention(c) (AnyObject, Selector, AnyObject, @convention(block) (Error?) -> Void) -> Void
         guard let method = class_getInstanceMethod(type(of: manager), disconnectSel) else {
-            completion(.failure(NSError(domain: "OpenSide", code: -4, userInfo: [NSLocalizedDescriptionKey: "연결 해제 함수 구현체를 찾을 수 없습니다."])))
+            completion(.failure(NSError(domain: "OpenSide", code: -4, userInfo: [NSLocalizedDescriptionKey: "The disconnect implementation could not be found."])))
             return
         }
 

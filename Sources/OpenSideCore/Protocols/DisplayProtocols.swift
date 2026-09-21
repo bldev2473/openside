@@ -100,16 +100,28 @@ public enum DisplayConfigurationError: Error, LocalizedError, Equatable {
     case completeConfigurationFailed(code: Int32)
     case configureMirroringFailed(code: Int32)
 
+    /// CoreGraphics 가 돌려준 코드. 어느 단계에서 실패했든 이 값이 원인을 가른다.
+    public var code: Int32 {
+        switch self {
+        case .beginConfigurationFailed(let code),
+             .configureOriginFailed(let code),
+             .completeConfigurationFailed(let code),
+             .configureMirroringFailed(let code):
+            return code
+        }
+    }
+
+    /// 로그에 남는 문장. 화면에 띄우는 문장은 AppStrings 가 언어에 맞춰 따로 만든다.
     public var errorDescription: String? {
         switch self {
         case .beginConfigurationFailed(let code):
-            return "디스플레이 구성 세션 시작 실패 (오류 코드: \(code))"
+            return "Could not begin the display configuration (code \(code))"
         case .configureOriginFailed(let code):
-            return "디스플레이 좌표 변경 실패 (오류 코드: \(code))"
+            return "Could not move the display (code \(code))"
         case .completeConfigurationFailed(let code):
-            return "디스플레이 구성 완료 커밋 실패 (오류 코드: \(code))"
+            return "Could not commit the display configuration (code \(code))"
         case .configureMirroringFailed(let code):
-            return "디스플레이 복제 설정 실패 (오류 코드: \(code))"
+            return "Could not set up display mirroring (code \(code))"
         }
     }
 }

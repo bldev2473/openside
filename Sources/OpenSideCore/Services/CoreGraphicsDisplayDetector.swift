@@ -50,7 +50,7 @@ public struct CoreGraphicsDisplayDetector: DisplayDetecting {
                 return num == displayID
             }
 
-            let name = screen?.localizedName ?? (isBuiltin ? "내장 디스플레이" : "외장 디스플레이 \(displayID)")
+            let name = screen?.localizedName ?? (isBuiltin ? "Built-in Display" : "External Display \(displayID)")
 
             // 사이드카 여부 판별: 이름에 "Sidecar", "iPad", "AirPlay" 포함 및 비내장 디스플레이
             let lowerName = name.lowercased()

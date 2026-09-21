@@ -61,28 +61,6 @@ public enum DisplayArrangementPreset: String, CaseIterable, Identifiable, Codabl
     case bottomCenter
 
     public var id: String { rawValue }
-
-    /// UI 버튼 표시용 짧은 라벨
-    public var label: String {
-        switch self {
-        case .leftTop:
-            return "좌측 상단"
-        case .leftCenter:
-            return "좌측 중앙"
-        case .leftBottom:
-            return "좌측 하단"
-        case .rightTop:
-            return "우측 상단"
-        case .rightCenter:
-            return "우측 중앙"
-        case .rightBottom:
-            return "우측 하단"
-        case .topCenter:
-            return "상단 중앙"
-        case .bottomCenter:
-            return "하단 중앙"
-        }
-    }
 }
 
 /// 디스플레이 목표 좌표 모델

@@ -14,7 +14,7 @@ public final class SettingsWindowController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "설정"
+        window.title = UserDefaultsLanguageManager.shared.currentLanguage.strings.settingsTitle
         window.center()
         window.isReleasedWhenClosed = false
         super.init(window: window)

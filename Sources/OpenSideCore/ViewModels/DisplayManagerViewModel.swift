@@ -44,7 +44,20 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 마지막으로 연결에 성공한 기기. 화면에는 쓰지 않습니다.
     /// 자동 연결이 어느 기기를 골라야 하는지 여기서 배웁니다.
     @Published public private(set) var lastConnectedDevice: SidecarDeviceInfo?
-    @Published public var errorMessage: String?
+    /// 마지막 조작이 실패한 까닭. 완성된 문장이 아니라 갈래를 들어, 화면이 고른 언어로 씁니다.
+    @Published public private(set) var failure: DisplayOperationFailure?
+
+    /// 던져진 오류를 갈래로 바꿔 기록합니다.
+    ///
+    /// CoreGraphics 가 거부한 것은 우리가 문장을 만들 수 있으므로 갈래로 들고, 그 밖의 오류는
+    /// 시스템이 이미 사용자 언어로 적어 주므로 그대로 씁니다.
+    private func record(_ error: Error) {
+        if let configuration = error as? DisplayConfigurationError {
+            failure = .configuration(configuration)
+        } else {
+            failure = .system(error.localizedDescription)
+        }
+    }
 
     private let detector: DisplayDetecting
     private let calculator: ArrangementCalculating
@@ -196,7 +209,7 @@ public final class DisplayManagerViewModel: ObservableObject {
         self.sessionInfo = self.isSidecarConnected ? sidecarConnector.currentSessionInfo() : nil
         // 목록에 기기가 남아 있어도 전제 조건이 깨졌으면 연결은 실패하므로 항상 점검합니다.
         self.readinessIssues = self.isSidecarConnected ? [] : readinessChecker.currentIssues()
-        self.errorMessage = nil
+        self.failure = nil
     }
 
     /// 지금 배치와 딱 맞는 프리셋. 어느 것과도 안 맞으면 nil(직접 맞춘 자리).
@@ -259,10 +272,10 @@ public final class DisplayManagerViewModel: ObservableObject {
         switch result {
         case .success:
             self.isCurrentResolutionHiDPI = enabled
-            self.errorMessage = nil
+            self.failure = nil
             refreshAfterModeChange()
         case .failure(let error):
-            self.errorMessage = error.localizedDescription
+            self.record(error)
         }
     }
 
@@ -278,13 +291,13 @@ public final class DisplayManagerViewModel: ObservableObject {
         placing anchor: DisplayAnchor? = nil
     ) -> Bool {
         guard let sidecar = sidecarDisplay else {
-            errorMessage = "연결된 사이드카 디스플레이가 없습니다."
+            failure = .noSidecarDisplay
             return false
         }
 
         switch configurator.configureMirroring(displayID: sidecar.id, mirrorOf: masterID, persistence: .session) {
         case .success:
-            self.errorMessage = nil
+            self.failure = nil
             // 화면 목록이 아직 옛 상태라 arrangementTarget 을 믿을 수 없습니다. 방금 복제를
             // 건 원본을 대상으로 못 박습니다.
             if let anchor, let master = masterID,
@@ -294,7 +307,7 @@ public final class DisplayManagerViewModel: ObservableObject {
             refreshAfterModeChange()
             return true
         case .failure(let error):
-            self.errorMessage = error.localizedDescription
+            self.record(error)
             return false
         }
     }
@@ -305,11 +318,11 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 사용자가 매번 고르게 둡니다.
     public func toggleMirroring(_ enable: Bool) {
         guard let sidecar = sidecarDisplay else {
-            errorMessage = "연결된 사이드카 디스플레이가 없습니다."
+            failure = .noSidecarDisplay
             return
         }
         guard let main = mainDisplay else {
-            errorMessage = "메인 디스플레이를 찾을 수 없습니다."
+            failure = .noMainDisplay
             return
         }
 
@@ -336,7 +349,7 @@ public final class DisplayManagerViewModel: ObservableObject {
         switch result {
         case .success:
             self.isSidecarMirrored = enable
-            self.errorMessage = nil
+            self.failure = nil
             // 확장으로 돌아왔으면 그 자리에서 바로 되돌립니다. 기다렸다 옮기면 그 사이
             // iPad 에 macOS 가 정한 엉뚱한 자리가 보입니다. CoreGraphics 는 커밋 즉시
             // 반영하므로 기다릴 이유가 없습니다(측정: 잘못된 자리가 보인 시간 0ms).
@@ -352,21 +365,21 @@ public final class DisplayManagerViewModel: ObservableObject {
             refreshAfterModeChange()
 
         case .failure(let error):
-            self.errorMessage = error.localizedDescription
+            self.record(error)
         }
     }
 
     /// 특정 사이드카 장치로 즉시 연결을 시작합니다.
     public func connectSidecar(to device: SidecarDeviceInfo) {
         self.isConnecting = true
-        self.errorMessage = nil
+        self.failure = nil
 
         sidecarConnector.connect(to: device) { [weak self] result in
             Task { @MainActor [weak self] in
                 self?.isConnecting = false
                 // 실패는 표시하지 않습니다. SidecarCore 가 자체 알림창을 띄우고, 그쪽 설명이
                 // 더 구체적입니다. 여기서 또 보여주면 같은 말이 두 번 나옵니다.
-                self?.errorMessage = nil
+                self?.failure = nil
                 switch result {
                 case .success:
                     self?.lastConnectFailure = nil
@@ -384,13 +397,13 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 현재 연결된 사이드카 세션을 종료합니다.
     public func disconnectSidecar() {
         self.isConnecting = true
-        self.errorMessage = nil
+        self.failure = nil
 
         sidecarConnector.disconnect { [weak self] result in
             Task { @MainActor [weak self] in
                 self?.isConnecting = false
                 // 연결과 같은 이유로 실패를 표시하지 않습니다.
-                self?.errorMessage = nil
+                self?.failure = nil
                 if case .success = result {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                         self?.refreshDisplays()
@@ -403,7 +416,7 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 사이드카 디스플레이의 해상도를 변경합니다.
     public func changeSidecarResolution(_ mode: DisplayResolutionMode) {
         guard let sidecar = sidecarDisplay else {
-            errorMessage = "연결된 사이드카 디스플레이가 없습니다."
+            failure = .noSidecarDisplay
             return
         }
 
@@ -412,11 +425,11 @@ public final class DisplayManagerViewModel: ObservableObject {
         switch result {
         case .success:
             self.currentResolution = mode
-            self.errorMessage = nil
+            self.failure = nil
             refreshAfterModeChange()
 
         case .failure(let error):
-            self.errorMessage = error.localizedDescription
+            self.record(error)
         }
     }
 
@@ -425,7 +438,7 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// Mac 본체 화면이 바뀌는 조작이므로 화면에서도 대상이 메인임을 밝혀야 합니다.
     public func changeMainResolution(_ mode: DisplayResolutionMode) {
         guard let main = mainDisplay else {
-            errorMessage = "메인 디스플레이를 찾을 수 없습니다."
+            failure = .noMainDisplay
             return
         }
 
@@ -433,22 +446,22 @@ public final class DisplayManagerViewModel: ObservableObject {
         // 조정인데, 바뀌는 대상은 Mac 본체 화면입니다. 이 도구가 남길 자국이 아닙니다.
         switch modeManager.setDisplayResolution(displayID: main.id, mode: mode, persistence: .session) {
         case .success:
-            self.errorMessage = nil
+            self.failure = nil
             refreshAfterModeChange()
         case .failure(let error):
-            self.errorMessage = error.localizedDescription
+            self.record(error)
         }
     }
 
     /// 특정 프리셋을 적용하여 사이드카 디스플레이 배치를 즉시 변경합니다.
     public func applyPreset(_ preset: DisplayArrangementPreset) {
         guard let main = mainDisplay else {
-            errorMessage = "메인 디스플레이를 찾을 수 없습니다."
+            failure = .noMainDisplay
             return
         }
 
         guard let sidecar = arrangementTarget else {
-            errorMessage = "연결된 사이드카 디스플레이가 없습니다."
+            failure = .noSidecarDisplay
             return
         }
 
@@ -467,14 +480,14 @@ public final class DisplayManagerViewModel: ObservableObject {
         case .success:
             self.lastAppliedPreset = preset
             self.presetManager.saveLastPreset(preset)
-            self.errorMessage = nil
+            self.failure = nil
             // 변경 후 상태 갱신
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                 self?.refreshDisplays()
             }
 
         case .failure(let error):
-            self.errorMessage = error.localizedDescription
+            self.record(error)
         }
     }
 
@@ -505,7 +518,7 @@ public final class DisplayManagerViewModel: ObservableObject {
     /// 저장된 프리셋이 없으므로 받은 좌표를 그대로 씁니다.
     public func inheritArrangement(from anchor: DisplayAnchor) {
         guard let target = arrangementTarget else {
-            errorMessage = "연결된 사이드카 디스플레이가 없습니다."
+            failure = .noSidecarDisplay
             return
         }
         applyArrangement(anchor, to: target)
@@ -537,7 +550,7 @@ public final class DisplayManagerViewModel: ObservableObject {
         }
 
         if case .failure(let error) = configurator.configureDisplayOrigin(displayID: target.id, origin: wanted) {
-            errorMessage = error.localizedDescription
+            record(error)
         }
     }
 
@@ -545,20 +558,20 @@ public final class DisplayManagerViewModel: ObservableObject {
     @discardableResult
     private func moveArrangementTarget(to origin: TargetDisplayOrigin) -> Bool {
         guard let target = arrangementTarget else {
-            errorMessage = "연결된 사이드카 디스플레이가 없습니다."
+            failure = .noSidecarDisplay
             return false
         }
 
         switch configurator.configureDisplayOrigin(displayID: target.id, origin: origin) {
         case .success:
-            self.errorMessage = nil
+            self.failure = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                 self?.refreshDisplays()
             }
             return true
 
         case .failure(let error):
-            self.errorMessage = error.localizedDescription
+            self.record(error)
             return false
         }
     }

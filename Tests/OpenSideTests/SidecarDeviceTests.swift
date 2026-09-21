@@ -266,7 +266,7 @@ final class ConnectFailureTests: XCTestCase {
         viewModel.connectSidecar(to: Self.device)
         try? await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertEqual(viewModel.lastConnectFailure, Self.device)
-        XCTAssertNil(viewModel.errorMessage, "macOS 가 자체 알림창을 띄우므로 우리는 안 띄운다")
+        XCTAssertNil(viewModel.failure, "macOS 가 자체 알림창을 띄우므로 우리는 안 띄운다")
 
         connector.fails = false
         viewModel.connectSidecar(to: Self.device)

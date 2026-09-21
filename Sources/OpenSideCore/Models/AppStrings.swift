@@ -44,6 +44,12 @@ public struct LocalizedUIStrings: Sendable {
     public let readinessHint: @Sendable (SidecarReadinessIssue) -> String
     /// 전제 조건 활성화를 권하는 안내 문구
     public let readinessCallToAction: String
+    /// 사이드카 화면을 찾지 못해 조작을 못 했을 때
+    public let noSidecarDisplayError: String
+    /// 메인 화면을 찾지 못해 조작을 못 했을 때
+    public let noMainDisplayError: String
+    /// CoreGraphics 가 화면 구성을 거부했을 때. 인자는 그 오류
+    public let displayConfigurationError: @Sendable (DisplayConfigurationError) -> String
     public let presetLabels: @Sendable (DisplayArrangementPreset) -> String
 }
 
@@ -89,6 +95,16 @@ extension AppLanguage {
                     }
                 },
                 readinessCallToAction: "원활한 동작을 위해 활성화해주세요",
+                noSidecarDisplayError: "연결된 사이드카 디스플레이가 없습니다",
+                noMainDisplayError: "메인 디스플레이를 찾을 수 없습니다",
+                displayConfigurationError: { error in
+                    switch error {
+                    case .beginConfigurationFailed: return "디스플레이 구성을 시작하지 못했습니다 (코드 \(error.code))"
+                    case .configureOriginFailed: return "디스플레이를 옮기지 못했습니다 (코드 \(error.code))"
+                    case .completeConfigurationFailed: return "디스플레이 구성을 적용하지 못했습니다 (코드 \(error.code))"
+                    case .configureMirroringFailed: return "디스플레이 복제를 설정하지 못했습니다 (코드 \(error.code))"
+                    }
+                },
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "상단 중앙"
@@ -140,6 +156,16 @@ extension AppLanguage {
                     }
                 },
                 readinessCallToAction: "Enable it for reliable operation",
+                noSidecarDisplayError: "No Sidecar display is connected",
+                noMainDisplayError: "The main display could not be found",
+                displayConfigurationError: { error in
+                    switch error {
+                    case .beginConfigurationFailed: return "Could not begin the display configuration (code \(error.code))"
+                    case .configureOriginFailed: return "Could not move the display (code \(error.code))"
+                    case .completeConfigurationFailed: return "Could not apply the display configuration (code \(error.code))"
+                    case .configureMirroringFailed: return "Could not set up display mirroring (code \(error.code))"
+                    }
+                },
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "Top Center"
@@ -191,6 +217,16 @@ extension AppLanguage {
                     }
                 },
                 readinessCallToAction: "安定した動作のために有効にしてください",
+                noSidecarDisplayError: "接続されている Sidecar ディスプレイがありません",
+                noMainDisplayError: "メインディスプレイが見つかりません",
+                displayConfigurationError: { error in
+                    switch error {
+                    case .beginConfigurationFailed: return "ディスプレイ構成を開始できませんでした (コード \(error.code))"
+                    case .configureOriginFailed: return "ディスプレイを移動できませんでした (コード \(error.code))"
+                    case .completeConfigurationFailed: return "ディスプレイ構成を適用できませんでした (コード \(error.code))"
+                    case .configureMirroringFailed: return "ディスプレイのミラーリングを設定できませんでした (コード \(error.code))"
+                    }
+                },
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "上中央"
@@ -242,6 +278,16 @@ extension AppLanguage {
                     }
                 },
                 readinessCallToAction: "请启用以确保正常运行",
+                noSidecarDisplayError: "没有已连接的随航显示器",
+                noMainDisplayError: "找不到主显示器",
+                displayConfigurationError: { error in
+                    switch error {
+                    case .beginConfigurationFailed: return "无法开始显示器配置 (代码 \(error.code))"
+                    case .configureOriginFailed: return "无法移动显示器 (代码 \(error.code))"
+                    case .completeConfigurationFailed: return "无法应用显示器配置 (代码 \(error.code))"
+                    case .configureMirroringFailed: return "无法设置显示器镜像 (代码 \(error.code))"
+                    }
+                },
                 presetLabels: { preset in
                     switch preset {
                     case .topCenter: return "上中"

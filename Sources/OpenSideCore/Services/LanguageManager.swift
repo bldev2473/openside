@@ -19,13 +19,19 @@ public final class UserDefaultsLanguageManager: ObservableObject, LanguageManagi
 
     @Published public private(set) var currentLanguage: AppLanguage
 
-    public init(userDefaults: UserDefaults = .standard) {
+    /// - Parameter preferredLanguages: 맥이 선호하는 언어 목록. 고른 적이 없을 때만 봅니다.
+    public init(
+        userDefaults: UserDefaults = .standard,
+        preferredLanguages: [String] = Locale.preferredLanguages
+    ) {
         self.userDefaults = userDefaults
         if let savedCode = userDefaults.string(forKey: storageKey),
            let language = AppLanguage(rawValue: savedCode) {
             self.currentLanguage = language
         } else {
-            self.currentLanguage = .korean
+            // 고른 적이 없으면 맥의 언어를 따릅니다. 한국어로 못 박아 두면 영어를 쓰는
+            // 맥에서 처음 켤 때 읽지 못하는 메뉴가 뜹니다.
+            self.currentLanguage = AppLanguage.matching(preferredLanguages)
         }
     }
 

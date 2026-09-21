@@ -1,9 +1,63 @@
 import Foundation
 import CoreGraphics
 
+/// 화면이 내놓은 모드 하나. CGDisplayMode 에서 우리가 쓰는 값만 뽑은 것입니다.
+///
+/// 고르는 규칙을 실제 화면 없이 시험할 수 있도록 둡니다. CGDisplayMode 는 만들 수 없습니다.
+struct RawDisplayMode: Equatable {
+    let width: Int
+    let height: Int
+    let pixelWidth: Int
+    let pixelHeight: Int
+    let refreshRate: Double
+}
+
 /// CoreGraphics Display Mode API를 활용한 디스플레이 해상도 조회 및 변경 서비스 구현체
 public struct CoreGraphicsDisplayModeManager: DisplayModeManaging {
     public init() {}
+
+    /// 화면이 내놓은 모드 목록에서 사용자에게 보일 것만 고릅니다.
+    ///
+    /// 세 가지를 합니다.
+    /// - 800x600 미만을 버립니다. 그보다 작으면 쓸 수가 없습니다.
+    /// - 논리 해상도가 같은 것은 하나만 남깁니다. 픽셀이 많은 쪽(HiDPI)을 고르되,
+    ///   지금 쓰는 모드는 픽셀이 적어도 이깁니다. 목록에서 현재 값이 사라지면 안 됩니다.
+    /// - 가로 오름차순, 가로가 같으면 세로 오름차순으로 정렬합니다.
+    static func usableModes(from raw: [RawDisplayMode], current: RawDisplayMode?) -> [DisplayResolutionMode] {
+        var byLogicalSize: [String: DisplayResolutionMode] = [:]
+
+        for mode in raw {
+            guard mode.width >= 800, mode.height >= 600 else { continue }
+
+            let isCurrent = current.map {
+                $0.width == mode.width && $0.height == mode.height && $0.pixelWidth == mode.pixelWidth
+            } ?? false
+
+            let candidate = DisplayResolutionMode(
+                width: mode.width,
+                height: mode.height,
+                pixelWidth: mode.pixelWidth,
+                pixelHeight: mode.pixelHeight,
+                refreshRate: mode.refreshRate,
+                isHiDPI: (mode.pixelWidth > mode.width) || (mode.pixelHeight > mode.height),
+                isCurrent: isCurrent
+            )
+
+            let key = "\(mode.width)x\(mode.height)"
+            if let existing = byLogicalSize[key] {
+                if isCurrent || (!existing.isCurrent && candidate.pixelWidth > existing.pixelWidth) {
+                    byLogicalSize[key] = candidate
+                }
+            } else {
+                byLogicalSize[key] = candidate
+            }
+        }
+
+        return byLogicalSize.values.sorted { first, second in
+            if first.width != second.width { return first.width < second.width }
+            return first.height < second.height
+        }
+    }
 
     public func getAvailableModes(displayID: CGDirectDisplayID) -> [DisplayResolutionMode] {
         let options: [CFString: Any] = [
@@ -14,55 +68,21 @@ public struct CoreGraphicsDisplayModeManager: DisplayModeManaging {
             return []
         }
 
-        let currentMode = getCurrentMode(displayID: displayID)
-
-        // 논리 해상도(width x height)별로 가장 화질이 뛰어난(HiDPI 우선) 모드 선택
-        var uniqueModesMap: [String: (mode: DisplayResolutionMode, rawMode: CGDisplayMode)] = [:]
-
-        for mode in allModes {
-            let width = mode.width
-            let height = mode.height
-
-            // 사용성이 떨어지는 극단적 저해상도(800x600 미만: 400x300, 512x384, 640x480 등) 필터링
-            guard width >= 800, height >= 600 else {
-                continue
-            }
-
-            let pixelW = mode.pixelWidth
-            let pixelH = mode.pixelHeight
-            let refresh = mode.refreshRate
-            let isHiDPI = (pixelW > width) || (pixelH > height)
-
-            let isCurrent = (currentMode?.width == width && currentMode?.height == height && currentMode?.pixelWidth == pixelW)
-
-            let key = "\(width)x\(height)"
-            let candidate = DisplayResolutionMode(
-                width: width,
-                height: height,
-                pixelWidth: pixelW,
-                pixelHeight: pixelH,
-                refreshRate: refresh,
-                isHiDPI: isHiDPI,
-                isCurrent: isCurrent
-            )
-
-            if let existing = uniqueModesMap[key] {
-                // 현재 모드이거나, 기존 모드보다 픽셀 수가 더 많으면(HiDPI) 대체
-                if isCurrent || (candidate.pixelWidth > existing.mode.pixelWidth) {
-                    uniqueModesMap[key] = (candidate, mode)
-                }
-            } else {
-                uniqueModesMap[key] = (candidate, mode)
-            }
+        let current = CGDisplayCopyDisplayMode(displayID).map {
+            RawDisplayMode(width: $0.width, height: $0.height,
+                           pixelWidth: $0.pixelWidth, pixelHeight: $0.pixelHeight,
+                           refreshRate: $0.refreshRate)
         }
 
-        // 가로 해상도 기준 오름차순 정렬
-        return uniqueModesMap.values.map { $0.mode }.sorted { mode1, mode2 in
-            if mode1.width != mode2.width {
-                return mode1.width < mode2.width
-            }
-            return mode1.height < mode2.height
-        }
+        // 고르는 규칙은 usableModes 에 있습니다. 여기서는 CoreGraphics 에서 값만 옮깁니다.
+        return Self.usableModes(
+            from: allModes.map {
+                RawDisplayMode(width: $0.width, height: $0.height,
+                               pixelWidth: $0.pixelWidth, pixelHeight: $0.pixelHeight,
+                               refreshRate: $0.refreshRate)
+            },
+            current: current
+        )
     }
 
     public func getCurrentMode(displayID: CGDirectDisplayID) -> DisplayResolutionMode? {

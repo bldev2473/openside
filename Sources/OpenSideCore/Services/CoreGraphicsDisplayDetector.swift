@@ -6,12 +6,26 @@ public struct CoreGraphicsDisplayDetector: DisplayDetecting {
     /// 이 앱이 만든 디스플레이를 알려주는 쪽. 쓰는 앱이 넣습니다. 안 넣으면 nil 입니다.
     private let managedDisplays: ManagedDisplayReporting?
 
-    public init(managedDisplays: ManagedDisplayReporting? = nil) {
+    /// 사이드카 세션이 붙어 있는지 물어볼 쪽.
+    ///
+    /// 이름을 못 읽는 복제 화면을 가릴 때 씁니다. 세션이 없으면 그 화면은 사이드카일 수가
+    /// 없습니다. 넣지 않으면 세션이 없는 것으로 봅니다.
+    private let sidecar: SidecarConnecting?
+
+    public init(
+        managedDisplays: ManagedDisplayReporting? = nil,
+        sidecar: SidecarConnecting? = SidecarDeviceManager()
+    ) {
         self.managedDisplays = managedDisplays
+        self.sidecar = sidecar
     }
 
     public func getActiveDisplays() -> [DisplayInfo] {
         var displays: [DisplayInfo] = []
+
+        // 화면마다 묻지 않고 한 번만 읽습니다. 목록을 도는 동안 값이 바뀌면 같은 목록 안에서
+        // 화면마다 다른 판정이 나옵니다.
+        let hasSidecarSession = sidecar?.currentSessionInfo() != nil
 
         // 1. NSScreen 정보를 통해 localizedName 및 메인 여부 매핑
         let screens = NSScreen.screens
@@ -52,21 +66,20 @@ public struct CoreGraphicsDisplayDetector: DisplayDetecting {
 
             let name = screen?.localizedName ?? (isBuiltin ? "Built-in Display" : "External Display \(displayID)")
 
-            // 사이드카 여부 판별: 이름에 "Sidecar", "iPad", "AirPlay" 포함 및 비내장 디스플레이
-            let lowerName = name.lowercased()
-            let nameLooksLikeSidecar = lowerName.contains("sidecar") ||
-                lowerName.contains("ipad") ||
-                lowerName.contains("airplay")
-
-            // 복제 중에는 NSScreen 이 이 화면을 내놓지 않아 이름을 못 찾습니다. 그러면
-            // 이름 판별이 실패하므로 복제 중인 비내장 디스플레이는 사이드카로 봅니다.
-            // 이 앱이 복제를 켜는 대상은 사이드카뿐입니다.
             let mirrorSource = CGDisplayMirrorsDisplay(displayID)
             let isMirrored = mirrorSource != kCGNullDirectDisplay
             // 이 앱이 만든 화면은 사이드카가 아닙니다. 그것도 비내장이고 NSScreen 이 이름을
-            // 내놓지 않아 위 규칙에 그대로 걸리므로, 만든 쪽이 알려준 식별자로 먼저 가릅니다.
+            // 내놓지 않아 판별 규칙에 그대로 걸리므로, 만든 쪽이 알려준 식별자로 가릅니다.
             let isOurs = managedDisplays?.managedDisplayID == displayID
-            let isSidecar = !isBuiltin && !isOurs && (nameLooksLikeSidecar || isMirrored)
+
+            // 가리는 규칙은 SidecarDisplayRule 에 있습니다. 여기서는 값만 모읍니다.
+            let isSidecar = SidecarDisplayRule.isSidecar(
+                name: name,
+                isBuiltin: isBuiltin,
+                isOurs: isOurs,
+                isMirrored: isMirrored,
+                hasSidecarSession: hasSidecarSession
+            )
 
             let info = DisplayInfo(
                 id: displayID,

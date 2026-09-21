@@ -13,6 +13,8 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
     private let languageManager: any LanguageManaging
     private var cancellables = Set<AnyCancellable>()
     private var lastCloseTime: TimeInterval = 0
+    /// 팝오버가 떠 있는 동안만 바깥 클릭을 지켜봅니다.
+    private let outsideClick: OutsideClickWatcher
     private var isShowingContextMenu = false
 
     public init(
@@ -27,6 +29,7 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
         self.languageManager = languageManager
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.popover = NSPopover()
+        self.outsideClick = OutsideClickWatcher()
         super.init()
 
         setupPopover()
@@ -109,6 +112,7 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
 
     /// 팝오버 닫힘 이벤트 수신 (버튼 재클릭 시 순간 재오픈 방지)
     public func popoverDidClose(_ notification: Notification) {
+        outsideClick.end()
         lastCloseTime = Date.timeIntervalSinceReferenceDate
     }
 
@@ -137,6 +141,15 @@ public final class StatusItemManager: NSObject, NSPopoverDelegate, NSMenuDelegat
         }
 
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+
+        // 메뉴바 앱은 아이콘을 눌러도 활성 앱이 되지 않을 때가 있어, transient 팝오버가
+        // 바깥 클릭을 못 받고 열린 채로 남습니다. 전역으로 한 번 더 지켜봅니다.
+        outsideClick.begin { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, self.popover.isShown else { return }
+                self.popover.performClose(nil)
+            }
+        }
         NSApp.activate(ignoringOtherApps: true)
 
         DispatchQueue.main.async { [weak self] in

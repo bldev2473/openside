@@ -91,6 +91,5 @@ fastlane/test_output
 # 개발자별 서명 설정 (Team ID 등)
 Local.xcconfig
 
-# 로컬 조사 기록 (공개 배포 대상 아님)
+# 로컬 조사 기록과 릴리스 도구 (공개 배포 대상 아님)
 docs/
-

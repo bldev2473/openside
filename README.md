@@ -38,6 +38,9 @@ one of them is missing.
 Download the latest `.dmg` from [Releases](../../releases), drag the app to
 `/Applications`, and launch it. The icon appears in the menu bar.
 
+The release is signed with a Developer ID certificate and notarised by Apple, so it
+opens without a Gatekeeper warning.
+
 ### Build from source
 
 ```sh
@@ -46,6 +49,10 @@ cd openside
 swift build -c release
 ./scripts/build_app.sh          # produces OpenSide.app
 ```
+
+`build_app.sh` signs the bundle with a Developer ID or Apple Development certificate if
+it finds one, and ad-hoc otherwise. Set `OPENSIDE_SIGN_IDENTITY` to choose. Ad-hoc is
+enough to run the app on your own Mac.
 
 To work in Xcode, generate the project first:
 

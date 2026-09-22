@@ -13,25 +13,26 @@ what you were doing.
 
 ## What it does
 
-- **Position the Sidecar display** with eight presets — corners, edges, and centres —
+- **Position the Sidecar display** with eight presets — corners, edges, and centers —
   or drag it in the miniature layout for finer placement
 - **Change resolution and HiDPI** for the Sidecar display without opening System Settings
 - **Connect and disconnect Sidecar** from the menu bar
-- **Say why no iPad was found** when discovery comes up empty, and open the relevant
+- **Explain why no iPad was found** when discovery comes up empty, and open the relevant
   settings pane directly
 - **Remember your last arrangement** and reapply it with one click
 - **Speak your language** — English, 한국어, 日本語, 简体中文
 
-It stays out of the way: no dock icon, no window, no background network activity.
+It stays out of the way: no Dock icon, no window, no background network activity.
 
 ## Requirements
 
 - macOS 14 Sonoma or later
 - An iPad that already works with Sidecar
 
-Sidecar itself needs both devices signed into the same Apple ID, with Bluetooth,
-Wi-Fi and Handoff on. OpenSide does not change those requirements — it tells you when
-one of them is missing.
+Sidecar itself requires both devices to be signed in to the same Apple Account (Apple ID),
+with Bluetooth, Wi-Fi, and Handoff enabled. OpenSide does not change those requirements —
+it alerts you when Wi-Fi or Handoff is turned off on your Mac, and links directly to
+the relevant settings pane.
 
 OpenSide is developed and tested on macOS 27. It reaches Sidecar through a private
 Apple framework whose names are not documented, so behaviour on older versions is not
@@ -42,7 +43,7 @@ verified. Reports are welcome.
 Download the latest `.dmg` from [Releases](../../releases), drag the app to
 `/Applications`, and launch it. The icon appears in the menu bar.
 
-The release is signed with a Developer ID certificate and notarised by Apple, so it
+The release is signed with a Developer ID certificate and notarized by Apple, so it
 opens without a Gatekeeper warning.
 
 ### Build from source
@@ -80,8 +81,13 @@ and is distributed directly.
 
 ## Security
 
-[SECURITY.md](SECURITY.md) lists what the app can reach, and how to check that a
-download came from here.
+See [SECURITY.md](SECURITY.md) for details on app permissions, system scope, and
+instructions on how to verify download authenticity.
+
+## AI assistance
+
+Parts of this project were written with AI coding tools. Every change was reviewed,
+built, and tested by the maintainer, who takes full responsibility for the code.
 
 ## License
 

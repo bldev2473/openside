@@ -167,9 +167,11 @@ final class UserDefaultsPresetManagerTests: XCTestCase {
 
     /// 대역이 아니라 실제 저장소 구현이 지우는지 확인한다.
     func testClearRemovesTheStoredValue() throws {
-        let suiteName = "OpenSideTests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        // 이름을 매번 새로 지으면 돌릴 때마다 plist 가 하나씩 남습니다. 한 이름을 쓰고,
+        // 끝날 때 값과 파일을 모두 치웁니다.
+        let suiteName = TestDefaults.name("PresetStore")
+        let defaults = try TestDefaults.open(suiteName)
+        defer { TestDefaults.remove(suiteName) }
 
         let manager = UserDefaultsPresetManager(userDefaults: defaults)
 

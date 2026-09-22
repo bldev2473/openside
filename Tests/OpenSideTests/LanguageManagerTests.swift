@@ -14,13 +14,10 @@ final class LanguageManagerTests: XCTestCase {
     }
 
     /// 언어 변경 및 설정값 저장/조회 검증
-    func testLanguageManagerPersistence() {
-        let testSuiteName = "OpenSideTests.LanguageSuite"
-        guard let testDefaults = UserDefaults(suiteName: testSuiteName) else {
-            XCTFail("테스트용 UserDefaults 초기화 실패")
-            return
-        }
-        testDefaults.removePersistentDomain(forName: testSuiteName)
+    func testLanguageManagerPersistence() throws {
+        let testSuiteName = TestDefaults.name("LanguageSuite")
+        let testDefaults = try TestDefaults.open(testSuiteName)
+        defer { TestDefaults.remove(testSuiteName) }
 
         // 맥의 언어를 명시해 둔다. 빼면 이 시험이 돌리는 사람의 맥 설정에 따라 달라진다.
         let manager = UserDefaultsLanguageManager(
@@ -46,7 +43,6 @@ final class LanguageManagerTests: XCTestCase {
         restoredManager.setLanguage(.chinese)
         XCTAssertEqual(restoredManager.currentLanguage, .chinese)
 
-        testDefaults.removePersistentDomain(forName: testSuiteName)
     }
 
     /// 각 언어별 UI 텍스트 번들(LocalizedUIStrings) 정상 매핑 검증
@@ -87,17 +83,25 @@ final class LanguageManagerTests: XCTestCase {
 /// 뜨고, 그 메뉴 안에서 언어를 찾아 바꿔야 했다.
 final class DefaultLanguageTests: XCTestCase {
 
+    /// 이 시험이 연 저장소들. 끝날 때 값과 파일을 모두 치웁니다.
+    private var opened: [String] = []
+
+    override func tearDown() {
+        opened.forEach(TestDefaults.remove)
+        opened.removeAll()
+        super.tearDown()
+    }
+
     private func defaults(_ name: String) -> UserDefaults {
-        let store = UserDefaults(suiteName: name)!
-        store.removePersistentDomain(forName: name)
-        return store
+        opened.append(name)
+        return (try? TestDefaults.open(name)) ?? UserDefaults(suiteName: name)!
     }
 
     /// 맥의 언어가 우리가 지원하는 것이면 그것으로 시작한다.
     func testSupportedSystemLanguageIsUsed() {
         for language in AppLanguage.allCases {
             let manager = UserDefaultsLanguageManager(
-                userDefaults: defaults("OpenSideTests.Default.\(language.rawValue)"),
+                userDefaults: defaults(TestDefaults.name("Default.\(language.rawValue)")),
                 preferredLanguages: [language.rawValue]
             )
             XCTAssertEqual(manager.currentLanguage, language)
@@ -107,7 +111,7 @@ final class DefaultLanguageTests: XCTestCase {
     /// 지역 표기가 붙어도 알아본다. macOS 는 ko 가 아니라 ko-KR 로 준다.
     func testRegionTagIsIgnored() {
         let manager = UserDefaultsLanguageManager(
-            userDefaults: defaults("OpenSideTests.Default.Region"),
+            userDefaults: defaults(TestDefaults.name("Default.Region")),
             preferredLanguages: ["ja-JP"]
         )
         XCTAssertEqual(manager.currentLanguage, .japanese)
@@ -116,7 +120,7 @@ final class DefaultLanguageTests: XCTestCase {
     /// 지원하지 않는 언어면 그다음 선호 언어를 본다. 맥은 목록으로 준다.
     func testNextPreferredLanguageIsTried() {
         let manager = UserDefaultsLanguageManager(
-            userDefaults: defaults("OpenSideTests.Default.List"),
+            userDefaults: defaults(TestDefaults.name("Default.List")),
             preferredLanguages: ["de-DE", "fr-FR", "zh-Hans-CN"]
         )
         XCTAssertEqual(manager.currentLanguage, .chinese)
@@ -125,7 +129,7 @@ final class DefaultLanguageTests: XCTestCase {
     /// 하나도 못 맞추면 영어로 둔다. 한국어보다 읽을 수 있는 사람이 많다.
     func testEnglishIsTheLastResort() {
         let manager = UserDefaultsLanguageManager(
-            userDefaults: defaults("OpenSideTests.Default.None"),
+            userDefaults: defaults(TestDefaults.name("Default.None")),
             preferredLanguages: ["de-DE"]
         )
         XCTAssertEqual(manager.currentLanguage, .english)
@@ -133,7 +137,7 @@ final class DefaultLanguageTests: XCTestCase {
 
     /// 저장된 값이 맥의 언어를 이긴다. 사용자가 고른 것이 먼저다.
     func testStoredChoiceWinsOverTheSystem() {
-        let store = defaults("OpenSideTests.Default.Stored")
+        let store = defaults(TestDefaults.name("Default.Stored"))
         UserDefaultsLanguageManager(userDefaults: store, preferredLanguages: ["en-US"])
             .setLanguage(.korean)
 

@@ -33,6 +33,10 @@ Sidecar itself needs both devices signed into the same Apple ID, with Bluetooth,
 Wi-Fi and Handoff on. OpenSide does not change those requirements — it tells you when
 one of them is missing.
 
+OpenSide is developed and tested on macOS 27. It reaches Sidecar through a private
+Apple framework whose names are not documented, so behaviour on older versions is not
+verified. Reports are welcome.
+
 ## Install
 
 Download the latest `.dmg` from [Releases](../../releases), drag the app to

@@ -1,6 +1,6 @@
 import Foundation
 
-/// UserDefaults를 이용한 프리셋 및 설정 영속화 서비스 구현체
+/// UserDefaults-based implementation for persisting arrangement presets and settings
 public struct UserDefaultsPresetManager: @unchecked Sendable, PresetManaging {
     private let userDefaults: UserDefaults
     private let lastPresetKey = "OpenSide.lastArrangementPreset"

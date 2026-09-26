@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// 맥북과 사이드카 아이패드의 현재 상대적 배치를 미니어처 형태로 시각화하고 마우스 드래그 미세 정렬을 지원하는 뷰
+/// Visualizes current relative arrangement of MacBook and Sidecar iPad in miniature and supports fine adjustment via drag.
 public struct DisplayVisualizerView: View {
     public let mainDisplay: DisplayInfo?
     public let sidecarDisplay: DisplayInfo?
-    /// 복제 중인지 여부. 복제는 화면이 둘이 아니라 하나이므로 카드도 한 장만 그립니다.
+    /// Whether mirroring is active. Mirroring represents one logical screen rather than two, so only a single card is drawn.
     public let isMirrored: Bool
     public let onDragEnded: ((TargetDisplayOrigin) -> Void)?
 
@@ -40,8 +40,8 @@ public struct DisplayVisualizerView: View {
                             .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
                     )
 
-                // 복제 중에는 두 디스플레이가 같은 bounds 를 보고합니다. 두 장을 그리면
-                // 정확히 겹쳐서 글자가 포개집니다. 화면이 하나이므로 카드도 한 장입니다.
+                // During mirroring, both displays report identical bounds. Drawing two would overlap
+                // exactly and stack text. Since there is only one screen, a single card is drawn.
                 if isMirrored, let mainRect = mainRect {
                     HStack(spacing: 6) {
                         Image(systemName: "laptopcomputer")
@@ -64,7 +64,7 @@ public struct DisplayVisualizerView: View {
                 }
 
                 if !isMirrored, let mainRect = mainRect {
-                    // 메인 맥북 디스플레이 미니어처
+                    // Main MacBook display miniature
                     VStack(spacing: 2) {
                         Image(systemName: "laptopcomputer")
                             .font(.system(size: 14))
@@ -83,7 +83,7 @@ public struct DisplayVisualizerView: View {
                 }
 
                 if !isMirrored, let sidecarRect = sidecarRect {
-                    // 사이드카 아이패드 디스플레이 미니어처 (드래그 가능)
+                    // Sidecar iPad display miniature (draggable)
                     VStack(spacing: 2) {
                         Image(systemName: "ipad.landscape")
                             .font(.system(size: 14))
@@ -128,7 +128,7 @@ public struct DisplayVisualizerView: View {
         .frame(height: 120)
     }
 
-    /// 캔버스 크기 대비 메인 디스플레이와 사이드카의 축소된 CGRect 및 스케일 배율 계산
+    /// Calculates scaled CGRects and scale factor for main display and Sidecar relative to canvas size.
     private func calculateMiniatureRects(in size: CGSize) -> (CGRect?, CGRect?, CGFloat) {
         guard let main = mainDisplay else { return (nil, nil, 1.0) }
 
@@ -137,7 +137,7 @@ public struct DisplayVisualizerView: View {
             allRects.append(sidecar.bounds)
         }
 
-        // 전체 bounding box 계산
+        // Calculate overall bounding box
         let minX = allRects.map { $0.minX }.min() ?? 0
         let maxX = allRects.map { $0.maxX }.max() ?? 100
         let minY = allRects.map { $0.minY }.min() ?? 0

@@ -1,9 +1,9 @@
 import Foundation
 import CoreGraphics
 
-/// 표준 디스플레이 정렬 좌표 계산기 구현체
-/// 주 디스플레이의 해상도와 사이드카 디스플레이의 해상도를 바탕으로
-/// CoreGraphics 글로벌 좌표계 기준의 x, y 위치를 정확하게 산출합니다.
+/// Standard display arrangement origin calculator
+/// Computes precise global CoreGraphics (x, y) coordinates for each preset
+/// given the bounding boxes of the main and Sidecar displays.
 public struct StandardArrangementCalculator: ArrangementCalculating {
     public init() {}
 

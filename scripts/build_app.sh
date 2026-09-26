@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-# 프로젝트 디렉토리 이동
+# Navigate to project directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${ROOT_DIR}"
@@ -20,14 +20,14 @@ rm -rf "${BUNDLE_DIR}"
 mkdir -p "${MACOS_DIR}"
 mkdir -p "${RESOURCES_DIR}"
 
-# 바이너리 복사
+# Copy binary
 cp "${ROOT_DIR}/.build/release/${APP_NAME}" "${MACOS_DIR}/${APP_NAME}"
 
-# 아이콘. '정보' 가 띄우는 표준 About 패널이 이것을 보여준다.
-# 로고를 고쳤으면 scripts/make_icon.sh 로 다시 만든다.
+# App icon. Displayed by the standard About panel invoked from 'About'.
+# Run scripts/make_icon.sh to regenerate if the logo changes.
 cp "${ROOT_DIR}/assets/AppIcon.icns" "${RESOURCES_DIR}/AppIcon.icns"
 
-# Info.plist 생성 (LSUIElement = true: 메뉴바 상주 앱 설정)
+# Generate Info.plist (LSUIElement = true: configure as agent / menu bar only app)
 cat <<EOF > "${CONTENTS_DIR}/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -61,14 +61,14 @@ cat <<EOF > "${CONTENTS_DIR}/Info.plist"
 </plist>
 EOF
 
-# 번들에 서명한다.
+# Sign the application bundle.
 #
-# 링커가 실행 파일에 ad-hoc 서명을 붙여 주기는 하지만 그것은 번들을 덮지 않는다. Info.plist
-# 와 Resources 가 봉인되지 않고, 신원도 번들 식별자가 아니라 실행 파일 이름으로 남는다.
-# 로그인 항목 등록처럼 안정된 신원을 요구하는 기능이 그 때문에 거부된다.
+# Although the linker signs the executable with an ad-hoc signature, that does not cover the bundle.
+# Info.plist and Resources remain unsealed, and identity resolves to the binary name instead of bundle ID.
+# Features requiring a stable identity (like login item registration) are rejected as a result.
 #
-# 인증서가 있으면 그것으로, 없으면 ad-hoc 으로 번들 전체를 서명한다. ad-hoc 은 이 맥에서만
-# 유효하므로, 남에게 나눠 줄 빌드라면 Developer ID 로 서명하고 공증까지 받아야 한다.
+# Sign the entire bundle using an available certificate, falling back to ad-hoc. Ad-hoc signatures
+# are valid only on this local Mac; distributable builds must be signed with Developer ID and notarized.
 SIGN_IDENTITY="${OPENSIDE_SIGN_IDENTITY:-}"
 if [ -z "${SIGN_IDENTITY}" ]; then
     for candidate in "Developer ID Application" "Apple Development"; do
@@ -81,9 +81,9 @@ fi
 
 if [ -n "${SIGN_IDENTITY}" ]; then
     echo "🔏 Signing with ${SIGN_IDENTITY}..."
-    # Developer ID 로 서명할 때는 보안 타임스탬프를 받아야 한다. 공증이 그것을 요구하므로
-    # --timestamp=none 으로 서명한 것은 제출해도 거부된다. 네트워크를 한 번 탄다.
-    # 로컬 개발 서명은 그럴 필요가 없어 건너뛴다.
+    # Secure timestamps are required when signing with Developer ID. Notarization mandates it,
+    # so submissions signed with --timestamp=none are rejected. Involves a network request.
+    # Skipped for local development certificates.
     TIMESTAMP_FLAG="--timestamp=none"
     case "${SIGN_IDENTITY}" in
         "Developer ID Application"*) TIMESTAMP_FLAG="--timestamp" ;;

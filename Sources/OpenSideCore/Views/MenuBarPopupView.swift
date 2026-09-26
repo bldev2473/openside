@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// 메뉴바 팝오버 메인 뷰
+/// Main view for menu bar popover.
 public struct MenuBarPopupView: View {
-    /// 초를 사람이 읽는 길이로. 지역에 맞는 표기를 시스템에 맡긴다.
+    /// Converts seconds to human-readable duration using localized formatting.
     static func durationText(_ seconds: TimeInterval) -> String {
         Duration.seconds(seconds).formatted(
             .units(allowed: [.hours, .minutes], width: .narrow)
@@ -24,7 +24,7 @@ public struct MenuBarPopupView: View {
         let strings = languageManager.currentLanguage.strings
 
         VStack(spacing: 12) {
-            // 상단 헤더: 타이틀, 연결/해제 버튼, 상태 배지, 새로고침 버튼
+            // Top header: title, connect/disconnect button, status badge, refresh button
             HStack(spacing: 5) {
                 Text("OpenSide")
                     .font(.system(size: 13, weight: .bold))
@@ -33,7 +33,7 @@ public struct MenuBarPopupView: View {
 
                 Spacer(minLength: 4)
 
-                // iPad 배터리와 남은 시간 추정 (Sidecar 연결 중에만 노출)
+                // iPad battery and remaining time estimate (visible only during Sidecar connection)
                 if viewModel.isSidecarConnected, let battery = viewModel.sidecarBattery {
                     HStack(spacing: 2) {
                         Image(systemName: battery.iconName)
@@ -62,7 +62,7 @@ public struct MenuBarPopupView: View {
                     ))
                 }
 
-                // 세션 프레임레이트. 무선이 느릴 때 여기서 먼저 드러납니다.
+                // Session framerate. Bottlenecks on wireless connections become apparent here first.
                 if let session = viewModel.sessionInfo {
                     Text("\(session.framerate) Hz")
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
@@ -74,7 +74,7 @@ public struct MenuBarPopupView: View {
                         .fixedSize(horizontal: true, vertical: false)
                 }
 
-                // 사이드카 연결 상태 배지
+                // Sidecar connection status badge
                 HStack(spacing: 4) {
                     Circle()
                         .fill(viewModel.isSidecarConnected ? Color.green : Color.gray)
@@ -92,7 +92,7 @@ public struct MenuBarPopupView: View {
                 .clipShape(Capsule())
                 .fixedSize(horizontal: true, vertical: false)
 
-                // 새로고침 버튼
+                // Refresh button
                 Button(action: {
                     viewModel.refreshDisplays()
                 }) {
@@ -102,11 +102,11 @@ public struct MenuBarPopupView: View {
                 .buttonStyle(.plain)
             }
 
-            // 확장이냐 복제냐가 도식과 그 아래 모든 것의 뜻을 정합니다. 그래서 맨 위,
-            // 도식 바로 앞에 둡니다.
+            // Whether extending or mirroring determines the meaning of the diagram and everything below it,
+            // so this control is placed at the very top, directly preceding the diagram.
             //
-            // 복제는 자동으로 켜지지 않습니다. 메인 화면 전부가 iPad 로 나가므로
-            // 무엇을 보낼지 사용자가 매번 고릅니다.
+            // Mirroring is not turned on automatically. The entire main display is output to iPad,
+            // so the user explicitly chooses what to display each time.
             if viewModel.isSidecarConnected {
                 Picker("", selection: Binding(
                     get: { viewModel.isSidecarMirrored },
@@ -120,7 +120,7 @@ public struct MenuBarPopupView: View {
                 .controlSize(.small)
             }
 
-            // 디스플레이 상대 배치 시각화 뷰 (드래그 미세 정렬 연동)
+            // Display relative arrangement visualizer view (supports drag fine adjustment)
             DisplayVisualizerView(
                 mainDisplay: viewModel.mainDisplay,
                 sidecarDisplay: viewModel.sidecarDisplay,
@@ -130,9 +130,9 @@ public struct MenuBarPopupView: View {
                 }
             )
 
-            // 복제 중에는 메인 화면 해상도를 고릅니다. 미러 세트는 해상도가 하나이고
-            // 메인이 그것을 정합니다. iPad 쪽 모드를 바꾸면 값만 갈라지고 그림은 그대로였습니다.
-            // Mac 본체 화면도 함께 바뀌므로 라벨에 대상이 메인임을 밝힙니다.
+            // During mirroring, select the main display resolution. The mirrored set shares a single resolution
+            // determined by the main display; changing iPad mode only diverges reported values without altering output.
+            // Since the Mac primary display changes, label explicitly identifies the target as main display.
             if viewModel.isSidecarMirrored, !viewModel.availableMainResolutions.isEmpty {
                 HStack(spacing: 6) {
                     Text(strings.mainResolution)
@@ -159,11 +159,11 @@ public struct MenuBarPopupView: View {
                 .padding(.horizontal, 4)
             }
 
-            // 해상도 선택. 확장일 때만입니다.
+            // Resolution selection: active only in extended desktop mode.
             //
-            // 캔버스를 비추는 동안에는 캔버스 크기를 고릅니다. 화면에 실제로 그려지는 크기를
-            // 정하는 것이 캔버스이고, iPad 쪽 모드를 바꿔 봐야 값만 갈라집니다. HiDPI 는
-            // 내놓지 않습니다. 캔버스는 언제나 논리 크기의 두 배로 그립니다.
+            // While mirroring a canvas, select the canvas size. The canvas determines the actual rendered size,
+            // and changing iPad mode only causes values to diverge. HiDPI toggle is omitted;
+            // canvas is always rendered at double logical size.
             if viewModel.sidecarDisplay != nil, !viewModel.isSidecarMirrored, viewModel.isShowingCanvas {
                 HStack(spacing: 6) {
                     Text(strings.resolution)
@@ -190,7 +190,7 @@ public struct MenuBarPopupView: View {
                 .padding(.horizontal, 4)
             }
 
-            // 사이드카 자기 해상도 선택 및 HiDPI 제어. 캔버스를 안 쓸 때입니다.
+            // Sidecar native resolution selection and HiDPI control (when not using canvas).
             if viewModel.sidecarDisplay != nil, !viewModel.isSidecarMirrored, !viewModel.isShowingCanvas {
                 HStack(spacing: 6) {
                     Text(strings.resolution)
@@ -199,9 +199,8 @@ public struct MenuBarPopupView: View {
                     Spacer()
 
                     if !viewModel.availableResolutions.isEmpty {
-                        // Picker 를 씁니다. Menu 안의 Button 라벨은 메뉴 항목으로 평탄화되면서
-                        // HStack 안의 체크마크 Image 가 버려져 현재 항목이 표시되지 않았습니다.
-                        // Picker 는 선택 표시를 macOS 가 직접 그립니다.
+                        // Use Picker. In Menu, Button labels are flattened into menu items and HStack checkmark Images
+                        // are stripped, failing to show the current selection. Picker renders selection indicators natively via macOS.
                         Picker("", selection: Binding<DisplayResolutionMode?>(
                             get: { viewModel.availableResolutions.first { $0.isCurrent } },
                             set: { mode in
@@ -219,7 +218,7 @@ public struct MenuBarPopupView: View {
                         .fixedSize()
                     }
 
-                    // HiDPI 토글 스위치 (지원 해상도에서만 활성화, 텍스트 잘림 방지)
+                    // HiDPI toggle switch (enabled only for supported resolutions, avoids text truncation)
                     HStack(spacing: 4) {
                         Text("HiDPI")
                             .font(.system(size: 11, weight: .medium))
@@ -239,10 +238,10 @@ public struct MenuBarPopupView: View {
                 .padding(.horizontal, 4)
             }
 
-            // 연결 상태에 따라 정렬 프리셋 또는 연결 버튼을 노출
+            // Displays arrangement presets or connect button depending on connection state
             if viewModel.isSidecarConnected {
-                // 복제 중에는 배치를 바꿀 수 없습니다. 두 화면이 한 화면이라 좌표가 하나뿐입니다.
-                // 연결된 상태이므로 아래 연결 버튼 분기로 떨어지면 안 됩니다.
+                // Arrangement cannot be changed during mirroring. Both displays share a single logical surface with one coordinate origin.
+                // Since it is connected, do not fall through to the connection button branch below.
                 if !viewModel.isSidecarMirrored {
                     PresetButtonGrid(
                         isEnabled: true,
@@ -258,8 +257,8 @@ public struct MenuBarPopupView: View {
                     viewModel.connectSidecar(to: firstDevice)
                 }) {
                     HStack(spacing: 5) {
-                        // 진행 표시를 버튼 안에 둔다. 누른 자리에서 상태가 보이고,
-                        // 버튼이 사라졌다 돌아오지 않아 목록이 흔들리지 않는다.
+                        // Place progress indicator inside the button. Keeps status visible right where clicked,
+                        // and prevents button disappearance and list jitter.
                         if viewModel.isConnecting {
                             ProgressView()
                                 .controlSize(.small)
@@ -275,7 +274,7 @@ public struct MenuBarPopupView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
-                    // 연결 전에도 잔량을 보여준다. 지금 붙일지 충전부터 할지 여기서 판단한다.
+                    // Displays battery level before connecting, allowing users to assess whether to connect or charge first.
                     .overlay(alignment: .trailing) {
                         if let battery = viewModel.sidecarBattery {
                             HStack(spacing: 2) {
@@ -309,7 +308,7 @@ public struct MenuBarPopupView: View {
                     .padding(.vertical, 8)
             }
 
-            // 전제 조건이 깨졌으면 기기 목록과 무관하게 알립니다. 목록에 남아 있어도 연결은 실패합니다.
+            // Notify when prerequisites are broken regardless of device list. Connection will fail even if listed.
             ForEach(viewModel.readinessIssues, id: \.self) { issue in
                 VStack(spacing: 4) {
                     Button(action: {
@@ -327,7 +326,7 @@ public struct MenuBarPopupView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
-                        // 문구는 가운데 두고 바로가기 아이콘만 우측 끝에 고정합니다.
+                        // Center text and pin shortcut icon to trailing edge.
                         .overlay(alignment: .trailing) {
                             Image(systemName: "arrow.up.forward.app.fill")
                                 .font(.system(size: 11))
@@ -346,7 +345,7 @@ public struct MenuBarPopupView: View {
                 }
             }
 
-            // 오류 메시지 표시
+            // Error message display
             if let failure = viewModel.failure {
                 Text(failure.message(strings))
                     .font(.system(size: 10))
@@ -356,7 +355,7 @@ public struct MenuBarPopupView: View {
 
             Divider()
 
-            // 하단 조작 바: 마지막 정렬 적용, 연결 해제, 앱 종료
+            // Bottom action bar: apply last preset, disconnect, quit app
             HStack(spacing: 8) {
                 if viewModel.isSidecarConnected {
                     Button(action: {

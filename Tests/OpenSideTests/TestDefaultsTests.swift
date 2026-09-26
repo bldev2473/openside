@@ -1,16 +1,15 @@
 import XCTest
 
-/// 시험이 쓰고 버리는 UserDefaults 저장소.
+/// Ephemeral UserDefaults store for tests.
 ///
-/// `removePersistentDomain` 은 값만 비우고 `~/Library/Preferences` 의 plist 파일은 남깁니다.
-/// 그래서 시험이 저장소 이름을 매번 새로 지으면 돌릴 때마다 파일이 하나씩 쌓입니다.
+/// `removePersistentDomain` only clears the in-memory values and leaves the plist file in `~/Library/Preferences`.
+/// Consequently, generating unique store names for each test creates accumulated files on every test run.
 ///
-/// 이름에 프로세스 번호를 붙입니다. `swift test --parallel` 은 시험마다 프로세스를 따로
-/// 띄우므로, 이름이 같으면 서로의 설정을 덮어씁니다.
+/// Appends the PID to the suite name. Since `swift test --parallel` launches separate processes per test,
+/// identical names would cause tests to overwrite each other's preferences.
 ///
-/// 파일은 시험이 다 끝난 뒤에 치웁니다. 시험 도중에 지우면 cfprefsd 가 아직 들고 있던
-/// 값을 그 뒤에 써서 파일이 되살아납니다. 그래도 남는 것이 있으므로, 치울 때 끝난
-/// 프로세스가 남긴 파일도 같이 거둡니다.
+/// Files are cleaned up after all tests complete. If deleted mid-test, cfprefsd writes cached values back,
+/// recreating the file. Since remnants can still occur, cleanup also sweeps files left by terminated processes.
 enum TestDefaults {
 
     static let prefix = "OpenSideTests."
@@ -18,20 +17,20 @@ enum TestDefaults {
     private static let lock = NSLock()
     private static var names: Set<String> = []
 
-    /// 이 프로세스만 쓰는 저장소 이름.
+    /// Suite name dedicated to this process.
     static func name(_ label: String) -> String {
         "\(prefix)\(label).\(getpid())"
     }
 
-    /// 저장소를 열고, 남아 있던 값을 비웁니다.
+    /// Opens the store and clears any preexisting values.
     static func open(_ name: String) throws -> UserDefaults {
         register(name)
-        let store = try XCTUnwrap(UserDefaults(suiteName: name), "\(name) 저장소를 못 열었다")
+        let store = try XCTUnwrap(UserDefaults(suiteName: name), "Failed to open \(name) store")
         store.removePersistentDomain(forName: name)
         return store
     }
 
-    /// 값을 비웁니다. 파일은 시험이 다 끝난 뒤에 치웁니다.
+    /// Clears values. Files are removed after all tests finish.
     static func clear(_ name: String) {
         register(name)
         let store = UserDefaults(suiteName: name)
@@ -40,27 +39,27 @@ enum TestDefaults {
         UserDefaults.standard.removeSuite(named: name)
     }
 
-    /// 값과 파일을 모두 치웁니다.
+    /// Removes both values and file.
     static func remove(_ name: String) {
         clear(name)
         removeFile(name)
     }
 
-    /// 이 프로세스가 연 저장소의 파일과, 끝난 프로세스가 남긴 파일을 치웁니다.
+    /// Removes files of stores opened by this process, as well as files left by terminated processes.
     static func sweep() {
         lock.lock(); let mine = names; lock.unlock()
         mine.forEach(removeFile)
         removeWhatDeadProcessesLeft()
     }
 
-    /// 그 저장소가 쓰는 파일 위치.
+    /// File path used by the store.
     static func path(of name: String) -> String {
         directory + "/\(name).plist"
     }
 
     static var directory: String { NSHomeDirectory() + "/Library/Preferences" }
 
-    /// 돌고 있는 프로세스의 파일은 건드리지 않습니다. 병렬로 도는 다른 시험의 것입니다.
+    /// Does not touch files of running processes, as they belong to concurrent test runners.
     private static func removeWhatDeadProcessesLeft() {
         let files = (try? FileManager.default.contentsOfDirectory(atPath: directory)) ?? []
         for file in files where file.hasPrefix(prefix) && file.hasSuffix(".plist") {
@@ -69,7 +68,7 @@ enum TestDefaults {
         }
     }
 
-    /// 이름 끝에 붙인 프로세스 번호. 없으면 우리가 지은 이름이 아닙니다.
+    /// Process ID appended to the end of the filename. Returns nil if not conforming to our naming scheme.
     static func pid(inFileNamed file: String) -> pid_t? {
         let stem = file.dropLast(".plist".count)
         guard let tail = stem.split(separator: ".").last else { return nil }
@@ -78,7 +77,7 @@ enum TestDefaults {
 
     private static func isRunning(_ owner: pid_t) -> Bool {
         if owner == getpid() { return true }
-        // 살아 있으면 0, 없으면 ESRCH. 남의 것이면 EPERM 이고, 그때는 살아 있는 것입니다.
+        // 0 if alive, ESRCH if not found. EPERM means owned by another user and therefore alive.
         return kill(owner, 0) == 0 || errno != ESRCH
     }
 
@@ -91,7 +90,7 @@ enum TestDefaults {
         _ = sweeper
     }
 
-    /// 시험 묶음이 끝나는 것을 듣고 있다가 치웁니다. 처음 저장소를 열 때 붙습니다.
+    /// Listens for test bundle completion and sweeps files. Attached when a store is first opened.
     private static let sweeper: Sweeper = {
         let observer = Sweeper()
         XCTestObservationCenter.shared.addTestObserver(observer)
@@ -107,17 +106,17 @@ enum TestDefaults {
 
 final class TestDefaultsTests: XCTestCase {
 
-    /// 이름은 프로세스마다 달라야 한다. 병렬로 돌 때 서로의 설정을 덮어쓰면 안 된다.
+    /// Names must be process-specific to prevent overwriting settings when running in parallel.
     func testTheNameCarriesTheProcessItBelongsTo() {
         let name = TestDefaults.name("NameCheck")
-        XCTAssertTrue(name.hasSuffix(".\(getpid())"), "이름에 프로세스 번호가 없다: \(name)")
+        XCTAssertTrue(name.hasSuffix(".\(getpid())"), "Name is missing process ID: \(name)")
         XCTAssertEqual(TestDefaults.pid(inFileNamed: name + ".plist"), getpid())
     }
 
-    /// 치우면 파일이 사라져야 한다.
+    /// Removing the store should delete the file.
     ///
-    /// cfprefsd 가 값을 언제 파일로 내려쓸지는 우리가 정하지 못합니다. 그 시점에 기대면
-    /// 시험이 돌 때마다 결과가 달라지므로, 파일을 직접 두고 치워지는지만 봅니다.
+    /// We cannot control when cfprefsd flushes values to disk. Relying on its timing makes
+    /// test outcomes flaky, so we manually create a file and verify its deletion.
     func testRemovingDeletesTheFile() throws {
         let name = TestDefaults.name("CleanupCheck")
         let path = TestDefaults.path(of: name)
@@ -125,10 +124,10 @@ final class TestDefaultsTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: path))
 
         TestDefaults.remove(name)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: path), "치운 뒤에도 파일이 남았다")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path), "File remained after removal")
     }
 
-    /// 비우면 값이 남지 않아야 한다.
+    /// Clearing should leave no values behind.
     func testClearingLeavesNoValue() throws {
         let name = TestDefaults.name("CleanupCheck")
         let store = try TestDefaults.open(name)
@@ -136,10 +135,10 @@ final class TestDefaultsTests: XCTestCase {
         store.synchronize()
 
         TestDefaults.clear(name)
-        XCTAssertNil(UserDefaults(suiteName: name)?.string(forKey: "key"), "값이 남았다")
+        XCTAssertNil(UserDefaults(suiteName: name)?.string(forKey: "key"), "Value remained after clearing")
     }
 
-    /// 열 때 지난 값이 남아 있으면 안 된다. 같은 이름을 다시 써도 깨끗해야 한다.
+    /// Opening should start empty with no stale values, even when reusing the same suite name.
     func testOpeningStartsEmpty() throws {
         let name = TestDefaults.name("CleanupCheck")
         let first = try TestDefaults.open(name)
@@ -147,10 +146,10 @@ final class TestDefaultsTests: XCTestCase {
         first.synchronize()
 
         let second = try TestDefaults.open(name)
-        XCTAssertNil(second.string(forKey: "key"), "지난 값이 남아 있다")
+        XCTAssertNil(second.string(forKey: "key"), "Stale value remained")
     }
 
-    /// 마지막 치우기는 그동안 연 저장소를 모두 대상으로 해야 한다.
+    /// Final sweep must cover every suite opened during the run.
     func testTheSweepCoversEverySuiteOpened() throws {
         let name = TestDefaults.name("SweepCheck")
         _ = try TestDefaults.open(name)
@@ -158,22 +157,22 @@ final class TestDefaultsTests: XCTestCase {
 
         TestDefaults.sweep()
         XCTAssertFalse(FileManager.default.fileExists(atPath: TestDefaults.path(of: name)),
-                       "연 적이 있는 저장소인데 치워지지 않았다")
+                       "Opened store was not cleaned up during sweep")
     }
 
-    /// 지난 실행이 남긴 파일도 거둬야 한다. 그러지 않으면 실행마다 하나씩 쌓인다.
+    /// Sweep must collect files left behind by terminated runs to prevent accumulation.
     func testTheSweepCollectsWhatAnEndedRunLeft() throws {
-        // 이미 끝난 프로세스의 번호. 0 과 1 은 살아 있으므로 쓰지 않는다.
+        // PID of an already terminated process. 0 and 1 are alive, so they are not used.
         let dead = TestDefaults.prefix + "Stale.999999"
         let path = TestDefaults.path(of: dead)
         FileManager.default.createFile(atPath: path, contents: Data("x".utf8))
 
         TestDefaults.sweep()
         XCTAssertFalse(FileManager.default.fileExists(atPath: path),
-                       "끝난 실행이 남긴 파일이 그대로다")
+                       "File left by terminated run was not cleaned up")
     }
 
-    /// 돌고 있는 프로세스의 파일은 건드리면 안 된다. 병렬로 도는 다른 시험의 것이다.
+    /// Files of currently running processes must not be touched, as they belong to concurrent tests.
     func testTheSweepLeavesALiveProcessAlone() throws {
         let live = TestDefaults.prefix + "Live.\(getppid())"
         let path = TestDefaults.path(of: live)
@@ -182,6 +181,6 @@ final class TestDefaultsTests: XCTestCase {
 
         TestDefaults.sweep()
         XCTAssertTrue(FileManager.default.fileExists(atPath: path),
-                      "돌고 있는 프로세스의 파일을 지웠다")
+                      "File belonging to a running process was deleted")
     }
 }

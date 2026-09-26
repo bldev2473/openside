@@ -1,9 +1,9 @@
 import Foundation
 import CoreGraphics
 
-/// 화면이 내놓은 모드 하나. CGDisplayMode 에서 우리가 쓰는 값만 뽑은 것입니다.
+/// A single display mode exposing only values used by this app.
 ///
-/// 고르는 규칙을 실제 화면 없이 시험할 수 있도록 둡니다. CGDisplayMode 는 만들 수 없습니다.
+/// Kept separate so selection rules can be tested without physical displays. CGDisplayMode cannot be instantiated directly.
 struct RawDisplayMode: Equatable {
     let width: Int
     let height: Int
@@ -12,17 +12,17 @@ struct RawDisplayMode: Equatable {
     let refreshRate: Double
 }
 
-/// CoreGraphics Display Mode API를 활용한 디스플레이 해상도 조회 및 변경 서비스 구현체
+/// Display resolution querying and mutation service implementation using CoreGraphics Display Mode APIs
 public struct CoreGraphicsDisplayModeManager: DisplayModeManaging {
     public init() {}
 
-    /// 화면이 내놓은 모드 목록에서 사용자에게 보일 것만 고릅니다.
+    /// Filters raw modes to only those suitable for presentation to the user.
     ///
-    /// 세 가지를 합니다.
-    /// - 800x600 미만을 버립니다. 그보다 작으면 쓸 수가 없습니다.
-    /// - 논리 해상도가 같은 것은 하나만 남깁니다. 픽셀이 많은 쪽(HiDPI)을 고르되,
-    ///   지금 쓰는 모드는 픽셀이 적어도 이깁니다. 목록에서 현재 값이 사라지면 안 됩니다.
-    /// - 가로 오름차순, 가로가 같으면 세로 오름차순으로 정렬합니다.
+    /// Performs three steps:
+    /// - Discards modes below 800x600 as unusable.
+    /// - Deduplicates modes with identical logical resolution, favoring higher pixel density (HiDPI),
+    ///   while ensuring the currently active mode is preserved even if it has fewer pixels.
+    /// - Sorts ascending by width, then height.
     static func usableModes(from raw: [RawDisplayMode], current: RawDisplayMode?) -> [DisplayResolutionMode] {
         var byLogicalSize: [String: DisplayResolutionMode] = [:]
 
@@ -74,7 +74,7 @@ public struct CoreGraphicsDisplayModeManager: DisplayModeManaging {
                            refreshRate: $0.refreshRate)
         }
 
-        // 고르는 규칙은 usableModes 에 있습니다. 여기서는 CoreGraphics 에서 값만 옮깁니다.
+        // Selection rules live in usableModes. Here we only map values from CoreGraphics.
         return Self.usableModes(
             from: allModes.map {
                 RawDisplayMode(width: $0.width, height: $0.height,
@@ -121,7 +121,7 @@ public struct CoreGraphicsDisplayModeManager: DisplayModeManaging {
             return .failure(.configureOriginFailed(code: -1))
         }
 
-        // 대상 CGDisplayMode 검색 (픽셀 크기까지 일치하는 HiDPI 우선)
+        // Search matching CGDisplayMode (favoring exact HiDPI pixel dimensions)
         guard let targetCGMode = allModes.first(where: {
             $0.width == mode.width &&
             $0.height == mode.height &&

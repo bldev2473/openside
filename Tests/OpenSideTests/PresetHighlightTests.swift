@@ -2,8 +2,8 @@ import XCTest
 import CoreGraphics
 @testable import OpenSideCore
 
-/// 눌러 둔 프리셋 표시는 저장된 값이 아니라 실제 배치를 따라야 한다.
-/// 배치는 시스템 설정이나 다른 빌드에서도 바뀌므로, 저장값만 믿으면 엉뚱한 칸이 켜진다.
+/// Active preset highlight must track the actual arrangement rather than a cached storage value.
+/// Displays can be repositioned via System Settings or other tools, so trusting storage alone highlights wrong cells.
 final class PresetHighlightTests: XCTestCase {
 
     final class LayoutDetector: DisplayDetecting, @unchecked Sendable {
@@ -37,20 +37,20 @@ final class PresetHighlightTests: XCTestCase {
         )
     }
 
-    /// 저장된 값이 있어도 실제 자리가 다르면 아무 칸도 켜지 않는다.
+    /// Highlights nothing when actual layout matches no preset even if storage has a value.
     @MainActor
     func testHighlightsNothingWhenTheLayoutMatchesNoPreset() {
-        // iPad 가 주 화면 오른쪽 (1512, 240). leftBottom 이면 (-1112, 148) 이어야 한다.
+        // iPad placed at right (1512, 240); leftBottom requires (-1112, 148).
         let viewModel = makeViewModel(sidecarOrigin: CGPoint(x: 1512, y: 240), stored: .leftBottom)
-        XCTAssertNil(viewModel.lastAppliedPreset, "저장값이 실제와 다르면 켜면 안 된다")
+        XCTAssertNil(viewModel.lastAppliedPreset, "Must not highlight if stored value differs from actual layout")
     }
 
-    /// 실제 자리가 프리셋과 맞으면 그 칸을 켠다.
+    /// Highlights the preset that the layout actually matches.
     @MainActor
     func testHighlightsThePresetTheLayoutActuallyMatches() {
         // leftBottom: x = -1112, y = 982 - 834 = 148
         let viewModel = makeViewModel(sidecarOrigin: CGPoint(x: -1112, y: 148), stored: nil)
         XCTAssertEqual(viewModel.lastAppliedPreset, .leftBottom,
-                       "저장값이 없어도 자리가 맞으면 켜야 한다")
+                       "Must highlight matching layout even without stored preset")
     }
 }

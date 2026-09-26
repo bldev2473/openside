@@ -1,7 +1,7 @@
 import Foundation
 import CoreGraphics
 
-/// CoreGraphics Display Configuration C API를 활용한 디스플레이 재배치 구성기 구현체
+/// Display reconfiguration implementation utilizing CoreGraphics Display Configuration C APIs
 public struct CoreGraphicsDisplayConfigurator: DisplayConfiguring {
     public init() {}
 
@@ -11,20 +11,20 @@ public struct CoreGraphicsDisplayConfigurator: DisplayConfiguring {
     ) -> Result<Void, DisplayConfigurationError> {
         var configRef: CGDisplayConfigRef?
 
-        // 1. 디스플레이 재구성 세션 시작
+        // 1. Begin display reconfiguration transaction
         let beginResult = CGBeginDisplayConfiguration(&configRef)
         guard beginResult == .success, let config = configRef else {
             return .failure(.beginConfigurationFailed(code: beginResult.rawValue))
         }
 
-        // 2. 디스플레이 원점 좌표(x, y) 재설정
+        // 2. Set new display origin coordinates (x, y)
         let configureResult = CGConfigureDisplayOrigin(config, displayID, origin.x, origin.y)
         guard configureResult == .success else {
             CGCancelDisplayConfiguration(config)
             return .failure(.configureOriginFailed(code: configureResult.rawValue))
         }
 
-        // 3. 영구 적용 모드로 디스플레이 구성 커밋
+        // 3. Commit display configuration permanently
         let completeResult = CGCompleteDisplayConfiguration(config, .permanently)
         guard completeResult == .success else {
             CGCancelDisplayConfiguration(config)
@@ -49,7 +49,7 @@ extension CoreGraphicsDisplayConfigurator {
             return .failure(.beginConfigurationFailed(code: beginResult.rawValue))
         }
 
-        // kCGNullDirectDisplay 를 원본으로 주면 복제가 풀리고 확장으로 돌아갑니다.
+        // Passing kCGNullDirectDisplay as master dissolves mirroring and reverts to extended desktop.
         let master = masterID ?? kCGNullDirectDisplay
         let mirrorResult = CGConfigureDisplayMirrorOfDisplay(config, displayID, master)
         guard mirrorResult == .success else {

@@ -6,7 +6,7 @@ final class DisplayAnchorTests: XCTestCase {
 
     private let main = CGRect(x: 0, y: 0, width: 1512, height: 982)
 
-    /// 왼쪽에 붙여 세로 가운데에 둔 화면.
+    /// Display attached to the left edge and vertically centered.
     func testReadsTheLeftEdgeAndTheSpotAlongIt() {
         let target = CGRect(x: -1112, y: 74, width: 1112, height: 834)
         let anchor = DisplayAnchor.from(mainBounds: main, targetBounds: target)
@@ -14,7 +14,7 @@ final class DisplayAnchorTests: XCTestCase {
         XCTAssertEqual(anchor.ratio, 0.5, accuracy: 0.01)
     }
 
-    /// 크기가 달라져도 같은 자리로 돌아와야 한다. 좌표를 그대로 쓰면 어긋난다.
+    /// Must return to the same relative position even when screen size changes. Using raw coordinates misaligns.
     func testKeepsTheSameSpotWhenTheScreenGrows() {
         let small = CGRect(x: -1112, y: 74, width: 1112, height: 834)
         let anchor = DisplayAnchor.from(mainBounds: main, targetBounds: small)
@@ -22,12 +22,12 @@ final class DisplayAnchorTests: XCTestCase {
         let big = CGRect(x: 0, y: 0, width: 1920, height: 1440)
         let origin = anchor.origin(mainBounds: main, targetBounds: big)
 
-        XCTAssertEqual(origin.x, -1920, "왼쪽 변에 붙어야 한다")
+        XCTAssertEqual(origin.x, -1920, "Must attach to the left edge")
         XCTAssertEqual(Double(origin.y) + 1440 / 2, 982 * 0.5, accuracy: 1,
-                       "중심이 주 화면의 같은 높이에 와야 한다")
+                       "Center must align with the same height on the main screen")
     }
 
-    /// 변을 따라간 위치도 크기와 무관하게 유지되어야 한다.
+    /// Position along the edge must also be preserved regardless of size.
     func testKeepsAnOffCentreSpot() {
         let target = CGRect(x: -1112, y: 0, width: 1112, height: 834)
         let anchor = DisplayAnchor.from(mainBounds: main, targetBounds: target)

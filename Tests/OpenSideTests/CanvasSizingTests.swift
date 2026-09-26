@@ -2,8 +2,8 @@ import XCTest
 import CoreGraphics
 @testable import OpenSideCore
 
-/// 캔버스를 쓰는 동안에도 메뉴바에서 해상도를 고를 수 있어야 한다.
-/// 다만 고르는 것은 iPad 의 모드가 아니라 캔버스의 크기다.
+/// Users should be able to select resolutions from the menu bar even while using a canvas.
+/// However, what is selected is the canvas size rather than the iPad's display mode.
 final class CanvasSizingTests: XCTestCase {
 
     static let small = DisplayResolutionMode(
@@ -43,7 +43,7 @@ final class CanvasSizingTests: XCTestCase {
         XCTAssertEqual(viewModel.currentCanvasSize?.width, 1112)
     }
 
-    /// 캔버스를 안 비추면 이 목록은 비어 있어야 한다. iPad 자기 모드를 고르는 칸이 따로 있다.
+    /// When not mirroring a canvas, this list should be empty. A separate control selects iPad native mode.
     @MainActor
     func testOffersNothingWhileTheCanvasIsNotShowing() {
         let viewModel = makeViewModel(

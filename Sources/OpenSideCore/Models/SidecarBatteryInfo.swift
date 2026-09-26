@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-/// 사이드카 배터리 충전 상태
+/// Sidecar battery charging state
 public enum SidecarBatteryState: String, Codable {
     case unknown
     case unplugged
@@ -9,7 +9,7 @@ public enum SidecarBatteryState: String, Codable {
     case full
 }
 
-/// 사이드카 기기의 배터리 잔량 및 충전 상태 모델
+/// Battery percentage and charging status model for Sidecar devices
 public struct SidecarBatteryInfo: Codable, Equatable {
     public let percentage: Int
     public let state: SidecarBatteryState
@@ -21,12 +21,12 @@ public struct SidecarBatteryInfo: Codable, Equatable {
         self.updatedAt = updatedAt
     }
 
-    /// 현재 기기가 충전 중인지 여부
+    /// Whether the device is currently charging
     public var isCharging: Bool {
         state == .charging || state == .full
     }
 
-    /// SF Symbols 배터리 아이콘 이름
+    /// SF Symbols battery icon name
     public var iconName: String {
         if isCharging {
             return "battery.100.bolt"
@@ -45,7 +45,7 @@ public struct SidecarBatteryInfo: Codable, Equatable {
         }
     }
 
-    /// 배터리 상태에 따른 시각적 강조 색상
+    /// Visual accent color reflecting battery state
     public var iconColor: Color {
         if isCharging {
             return .green

@@ -1,12 +1,12 @@
 import XCTest
 @testable import OpenSideCore
 
-/// 바깥 클릭 감시는 팝오버가 떠 있는 동안만 돌아야 한다.
-/// 계속 켜 두면 앱이 쓰이지 않는 내내 전역 이벤트를 받는다.
+/// Outside click monitoring should run only while the popover is visible.
+/// Keeping it active permanently receives global events even when the app is idle.
 @MainActor
 final class OutsideClickWatcherTests: XCTestCase {
 
-    /// 실제 NSEvent 대신 가짜 등록기를 넣어, 등록과 해제가 짝이 맞는지 본다.
+    /// Injects a spy registrar instead of real NSEvent to verify registration and teardown pairing.
     @MainActor
     private final class Spy {
         var started = 0
@@ -44,7 +44,7 @@ final class OutsideClickWatcherTests: XCTestCase {
         XCTAssertEqual(spy.stopped, 1)
     }
 
-    /// 팝오버를 연달아 열어도 감시가 겹쳐 쌓이면 안 된다.
+    /// Multiple successive popover openings must not stack redundant monitors.
     func testBeginTwiceRegistersOnlyOnce() {
         let spy = Spy()
         let watcher = spy.makeWatcher()
@@ -53,7 +53,7 @@ final class OutsideClickWatcherTests: XCTestCase {
         XCTAssertEqual(spy.started, 1)
     }
 
-    /// 켜지 않았는데 끄라고 해도 조용히 넘어간다.
+    /// Calling end without begin fails gracefully.
     func testEndWithoutBeginDoesNothing() {
         let spy = Spy()
         spy.makeWatcher().end()

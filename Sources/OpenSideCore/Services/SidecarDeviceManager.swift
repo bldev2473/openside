@@ -1,7 +1,7 @@
 import Foundation
 import ObjectiveC
 
-/// macOS SidecarCore 프라이빗 프레임워크를 활용한 사이드카 장비 검색 및 연결 관리자
+/// Sidecar device discovery and connection manager utilizing macOS private SidecarCore framework
 public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
     private let displayManagerClass: AnyClass?
     private let sidecarCoreLoaded: Bool
@@ -12,7 +12,7 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
         self.displayManagerClass = NSClassFromString("SidecarDisplayManager")
     }
 
-    /// SidecarDisplayManager.sharedManager 획득
+    /// Obtains SidecarDisplayManager.sharedManager
     private func getSharedManager() -> AnyObject? {
         guard let cls = displayManagerClass as? NSObject.Type else {
             return nil
@@ -24,13 +24,13 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
         return cls.perform(sel)?.takeUnretainedValue()
     }
 
-    /// 기기를 가리키는 안정된 식별자.
+    /// Stable unique identifier for a device.
     ///
-    /// 이름은 쓰지 않습니다. 사용자가 iPad 이름을 바꾸면 같은 기기가 다른 기기로 보이고,
-    /// 이름이 같은 기기가 둘이면 서로 구별되지 않습니다.
+    /// Device names are not used. Renaming an iPad would make it appear as a new device,
+    /// and identical names cannot be distinguished.
     ///
-    /// 읽을 수 없으면 nil 을 돌려줍니다. 임의의 값을 지어내면 폴링마다 다른 값이 나와
-    /// 이 식별자를 기억해 두는 쪽이 전부 깨집니다.
+    /// Returns nil if unreadable. Synthesizing random values would produce different IDs per poll,
+    /// breaking components that remember device IDs.
     private func stableIdentifier(of device: AnyObject) -> String? {
         guard let object = device as? NSObject else { return nil }
         let idSel = NSSelectorFromString("identifier")
@@ -58,8 +58,8 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
         let connectedIDs = Set(rawConnected.compactMap { stableIdentifier(of: $0) })
 
         return rawDevices.compactMap { dev -> SidecarDeviceInfo? in
-            // 식별자가 없는 기기는 내보내지 않습니다. 연결 여부도 기억도 식별자에 걸려 있어
-            // 이름만 있는 항목은 목록에 있어도 쓸 수가 없습니다.
+            // Exclude devices without identifiers. Connection status and persistence depend on IDs,
+            // so an entry with only a name cannot be managed reliably.
             guard let id = stableIdentifier(of: dev) else { return nil }
 
             let name = (dev.perform(nameSel)?.takeUnretainedValue() as? String) ?? "Unknown Device"
@@ -80,7 +80,7 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
 
         let rawDevices = (manager.perform(NSSelectorFromString("devices"))?.takeUnretainedValue() as? [AnyObject]) ?? []
 
-        // 이름이 아니라 식별자로 찾습니다. 이름이 같은 iPad 가 둘이면 이름으로는 못 가립니다.
+        // Search by identifier, not name, to disambiguate devices with identical names.
         guard let targetDev = rawDevices.first(where: { stableIdentifier(of: $0) == device.id }) else {
             completion(.failure(NSError(domain: "OpenSide", code: -2, userInfo: [NSLocalizedDescriptionKey: "No such device to connect to: \(device.name)"])))
             return
@@ -113,7 +113,7 @@ public struct SidecarDeviceManager: @unchecked Sendable, SidecarConnecting {
             return nil
         }
 
-        // 붙어 있지 않으면 configForDevice: 가 nil 을 줍니다. 여기 온 이상 세션이 있습니다.
+        // configForDevice: returns nil when disconnected; reaching here guarantees an active session.
         func number(_ key: String) -> Int? { (config.value(forKey: key) as? NSNumber)?.intValue }
         guard let framerate = number("framerate"),
               let minimumBitrate = number("txMinBitrate"),

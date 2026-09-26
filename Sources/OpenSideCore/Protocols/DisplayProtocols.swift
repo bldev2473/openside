@@ -1,28 +1,28 @@
 import Foundation
 import CoreGraphics
 
-/// 디스플레이 감지 인터페이스
-/// 시스템에 연결된 디스플레이 목록을 조회하고 사이드카 연결 여부를 식별합니다.
+/// Interface for display detection
+/// Enumerates active displays connected to the system and identifies Sidecar connections.
 public protocol DisplayDetecting: Sendable {
-    /// 현재 활성화된 모든 디스플레이 목록을 반환합니다.
+    /// Returns all currently active displays.
     func getActiveDisplays() -> [DisplayInfo]
 
-    /// 연결된 사이드카 디스플레이가 있는 경우 반환합니다.
+    /// Returns the connected Sidecar display, if present.
     func getSidecarDisplay() -> DisplayInfo?
 
-    /// 메인 디스플레이를 반환합니다.
+    /// Returns the main display.
     func getMainDisplay() -> DisplayInfo?
 }
 
-/// 디스플레이 정렬 좌표 계산 인터페이스
-/// 기준 화면(메인 맥북)과 대상 화면(아이패드)의 크기를 바탕으로 프리셋별 좌표를 계산합니다.
+/// Interface for calculating display arrangement coordinates
+/// Computes global origin coordinates for presets based on main and target display dimensions.
 public protocol ArrangementCalculating: Sendable {
-    /// 주어진 프리셋에 따른 대상 디스플레이의 목표 글로벌 원점 좌표 (x, y)를 계산합니다.
+    /// Calculates the target display's global origin (x, y) for a given preset.
     /// - Parameters:
-    ///   - mainBounds: 기준이 되는 주 디스플레이의 CGRect
-    ///   - targetBounds: 이동할 대상 디스플레이(사이드카)의 CGRect
-    ///   - preset: 적용하고자 하는 배치 프리셋
-    /// - Returns: 계산된 목표 좌표 (x, y)
+    ///   - mainBounds: CGRect of the reference main display
+    ///   - targetBounds: CGRect of the target display (Sidecar) being arranged
+    ///   - preset: The arrangement preset to apply
+    /// - Returns: Calculated target coordinates (x, y)
     func calculateOrigin(
         mainBounds: CGRect,
         targetBounds: CGRect,
@@ -30,77 +30,78 @@ public protocol ArrangementCalculating: Sendable {
     ) -> TargetDisplayOrigin
 }
 
-/// 디스플레이 설정 적용 인터페이스
-/// CoreGraphics 트랜잭션을 통해 시스템 디스플레이 배치를 실제로 변경합니다.
+/// Interface for applying display configurations
+/// Applies system display arrangements via CoreGraphics configuration transactions.
 public protocol DisplayConfiguring: Sendable {
-    /// 지정된 디스플레이의 원점 좌표를 변경하여 영구적으로 적용합니다.
+    /// Modifies and permanently commits the origin coordinates of a display.
     /// - Parameters:
-    ///   - displayID: 대상 디스플레이 ID
-    ///   - origin: 설정할 목표 좌표
-    /// - Returns: 설정 성공 여부 및 오류
+    ///   - displayID: Target display ID
+    ///   - origin: Target coordinates to configure
+    /// - Returns: Success or configuration error
     func configureDisplayOrigin(
         displayID: CGDirectDisplayID,
         origin: TargetDisplayOrigin
     ) -> Result<Void, DisplayConfigurationError>
 
-    /// 디스플레이를 다른 디스플레이의 복제본으로 만들거나 그 상태를 해제합니다.
+    /// Configures a display to mirror another display or cancels mirroring.
     /// - Parameters:
-    ///   - displayID: 대상 디스플레이 ID
-    ///   - masterID: 복제할 원본 디스플레이 ID. nil 이면 복제를 해제하고 확장으로 되돌립니다.
-    ///   - persistence: 변경을 얼마나 오래 유지할지.
+    ///   - displayID: Target display ID
+    ///   - masterID: Master display ID to mirror. Passing nil reverts to extended display mode.
+    ///   - persistence: How long the configuration should persist.
     func configureMirroring(
         displayID: CGDirectDisplayID,
         mirrorOf masterID: CGDirectDisplayID?,
         persistence: DisplayConfigurationPersistence
     ) -> Result<Void, DisplayConfigurationError>
 
-    /// 해당 디스플레이가 지금 다른 디스플레이를 복제하고 있는지 알려줍니다.
+    /// Returns whether the display is currently mirroring another display.
     func isMirroring(displayID: CGDirectDisplayID) -> Bool
 }
 
-/// 이 앱이 만든 디스플레이가 무엇인지 알려줍니다.
+/// Reports displays created by this application.
 ///
-/// 이 라이브러리를 쓰는 앱이 가상 디스플레이를 만들어 iPad 에 복제할 수 있습니다. 그 화면도 비내장이고
-/// 복제에 얽혀 있어 판별 규칙에 그대로 걸립니다. 만든 쪽이 알려줘야 가릴 수 있습니다.
+/// An app using this library may create a virtual display and mirror it to the iPad.
+/// That virtual screen is also non-builtin and involved in mirroring, thus matching the detection rule unless filtered.
+/// The creating component must report its identifier so it can be distinguished.
 public protocol ManagedDisplayReporting: AnyObject, Sendable {
-    /// 이 앱이 만들어 띄운 디스플레이. 없으면 nil.
+    /// The display created by this app, or nil if none.
     var managedDisplayID: CGDirectDisplayID? { get }
 }
 
-/// 캔버스를 쓰는 동안 화면 크기를 정하는 쪽. 쓰는 앱이 넣습니다. 안 넣으면 nil 입니다.
+/// Component that controls canvas screen sizing. Injected by consuming apps, or nil if unused.
 ///
-/// 캔버스는 고를 수 있는 크기 목록이 따로 있습니다. 그리고 크기를 바꾸는 방법도 다릅니다 —
-/// 화면의 모드를 바꾸는 것이 아니라 캔버스를 그 크기로 다시 만듭니다. 가상 디스플레이는
-/// 모드를 한 번이라도 바꾸면 놓아 주어도 프로세스가 끝날 때까지 화면이 남습니다.
-/// 뷰모델과 같은 자리(메인 액터)에서만 불립니다. 목록과 선택이 화면과 붙어 있습니다.
+/// Canvases have a distinct list of selectable sizes. Resizing them also works differently —
+/// rather than changing the display mode, the canvas is recreated at the new size.
+/// Changing modes on virtual displays causes them to persist until process exit even after release.
+/// Invoked only on the main actor alongside the view model.
 @MainActor
 public protocol CanvasSizing: AnyObject {
-    /// 고를 수 있는 크기.
+    /// Available canvas sizes.
     var availableCanvasSizes: [DisplayResolutionMode] { get }
 
-    /// 지금 쓰는 크기.
+    /// Current canvas size.
     var currentCanvasSize: DisplayResolutionMode? { get }
 
-    /// 크기를 바꿉니다. 캔버스를 다시 만듭니다.
+    /// Changes the canvas size by recreating the canvas.
     func selectCanvasSize(_ mode: DisplayResolutionMode)
 }
 
-/// 디스플레이 설정 변경을 얼마나 오래 유지할지.
+/// Persistence duration for display configuration changes.
 public enum DisplayConfigurationPersistence: Sendable {
-    /// 로그아웃하면 원래대로 돌아갑니다.
+    /// Reverts upon logout.
     case session
-    /// 다시 바꾸기 전까지 남습니다.
+    /// Persists until explicitly changed again.
     case permanent
 }
 
-/// 디스플레이 구성 처리 중 발생 가능한 오류 타입
+/// Errors that can occur during display configuration
 public enum DisplayConfigurationError: Error, LocalizedError, Equatable {
     case beginConfigurationFailed(code: Int32)
     case configureOriginFailed(code: Int32)
     case completeConfigurationFailed(code: Int32)
     case configureMirroringFailed(code: Int32)
 
-    /// CoreGraphics 가 돌려준 코드. 어느 단계에서 실패했든 이 값이 원인을 가른다.
+    /// Return code from CoreGraphics. Distinguishes the failure cause regardless of step.
     public var code: Int32 {
         switch self {
         case .beginConfigurationFailed(let code),
@@ -111,7 +112,7 @@ public enum DisplayConfigurationError: Error, LocalizedError, Equatable {
         }
     }
 
-    /// 로그에 남는 문장. 화면에 띄우는 문장은 AppStrings 가 언어에 맞춰 따로 만든다.
+    /// English description for logging. User-facing strings are constructed separately by AppStrings per language.
     public var errorDescription: String? {
         switch self {
         case .beginConfigurationFailed(let code):
@@ -126,27 +127,27 @@ public enum DisplayConfigurationError: Error, LocalizedError, Equatable {
     }
 }
 
-/// 프리셋 저장소 인터페이스
-/// 사용자가 최근에 선택한 정렬 프리셋 및 설정을 영속화합니다.
+/// Preset repository interface
+/// Persists the user's recently selected arrangement presets and configurations.
 public protocol PresetManaging: Sendable {
-    /// 마지막으로 적용된 프리셋을 저장합니다.
+    /// Saves the last applied preset.
     func saveLastPreset(_ preset: DisplayArrangementPreset)
 
-    /// 저장된 마지막 프리셋을 반환합니다.
+    /// Returns the last saved preset.
     func loadLastPreset() -> DisplayArrangementPreset?
 
-    /// 저장된 프리셋을 지웁니다. 사용자가 프리셋 대신 직접 끌어다 놓았을 때 호출합니다.
+    /// Clears the saved preset. Called when the user drags the display manually instead of choosing a preset.
     func clearLastPreset()
 }
 
-/// 미니어처 캔버스 드래그 좌표를 글로벌 시스템 좌표로 변환하는 인터페이스
+/// Interface for transforming miniature canvas drag coordinates into global system coordinates
 public protocol CoordinateTransforming: Sendable {
-    /// 미니어처 뷰에서의 드래그 델타와 스케일을 바탕으로 새로운 글로벌 원점 좌표를 계산합니다.
+    /// Calculates a new global origin based on canvas drag delta and scale.
     /// - Parameters:
-    ///   - currentOrigin: 현재 대상 디스플레이의 글로벌 원점 (x, y)
-    ///   - dragTranslation: 캔버스 상의 마우스 이동량 (dx, dy)
-    ///   - scale: 캔버스의 실제 크기 대비 축소 배율
-    /// - Returns: 계산된 새로운 글로벌 목표 좌표
+    ///   - currentOrigin: Current global origin (x, y) of the target display
+    ///   - dragTranslation: Mouse drag delta on canvas (dx, dy)
+    ///   - scale: Downscaling ratio of miniature canvas relative to actual dimensions
+    /// - Returns: Calculated new global target coordinates
     func transformDragToTargetOrigin(
         currentOrigin: CGPoint,
         dragTranslation: CGSize,
@@ -154,40 +155,40 @@ public protocol CoordinateTransforming: Sendable {
     ) -> TargetDisplayOrigin
 }
 
-/// 디스플레이 해상도 모드 목록 조회 및 변경 인터페이스
+/// Interface for enumerating and modifying display resolution modes
 public protocol DisplayModeManaging: Sendable {
-    /// 지정된 디스플레이가 지원하는 고유 해상도 모드 목록을 크기순으로 반환합니다.
+    /// Returns available distinct resolution modes for the display, sorted by dimensions.
     func getAvailableModes(displayID: CGDirectDisplayID) -> [DisplayResolutionMode]
 
-    /// 지정된 디스플레이의 현재 적용된 해상도 모드를 반환합니다.
+    /// Returns the currently active resolution mode for the display.
     func getCurrentMode(displayID: CGDirectDisplayID) -> DisplayResolutionMode?
 
-    /// 지정된 디스플레이의 해상도를 변경합니다.
-    /// - Parameter persistence: 변경을 얼마나 오래 유지할지. 기본값은 영구입니다.
+    /// Changes the display resolution mode.
+    /// - Parameter persistence: How long the change should persist. Defaults to permanent.
     func setDisplayResolution(
         displayID: CGDirectDisplayID,
         mode: DisplayResolutionMode,
         persistence: DisplayConfigurationPersistence
     ) -> Result<Void, DisplayConfigurationError>
 
-    /// 현재 해상도에서 HiDPI 전환이 가능한지 여부를 반환합니다.
+    /// Returns whether HiDPI can be toggled for the current resolution.
     func canToggleHiDPI(displayID: CGDirectDisplayID) -> Bool
 
-    /// 현재 해상도를 유지하면서 HiDPI 활성화 여부를 전환합니다.
+    /// Toggles HiDPI on/off while maintaining the current logical resolution.
     func toggleHiDPI(displayID: CGDirectDisplayID, enable: Bool) -> Result<Void, DisplayConfigurationError>
 }
 
-/// 사이드카 장비 검색 및 연결/해제 제어 인터페이스
+/// Interface for discovering and connecting/disconnecting Sidecar devices
 public protocol SidecarConnecting: Sendable {
-    /// 주변의 연결 가능한 사이드카 기기 목록을 반환합니다.
+    /// Returns nearby connectable Sidecar devices.
     func getAvailableDevices() -> [SidecarDeviceInfo]
 
-    /// 지정된 사이드카 기기로 연결을 시작합니다.
+    /// Initiates connection to the specified Sidecar device.
     func connect(to device: SidecarDeviceInfo, completion: @escaping @Sendable (Result<Void, Error>) -> Void)
 
-    /// 지금 돌고 있는 세션의 지표를 읽습니다. 붙어 있지 않으면 nil.
+    /// Reads metrics of the currently running session, or nil if disconnected.
     func currentSessionInfo() -> SidecarSessionInfo?
 
-    /// 활성화된 사이드카 세션을 종료합니다.
+    /// Terminates the active Sidecar session.
     func disconnect(completion: @escaping @Sendable (Result<Void, Error>) -> Void)
 }

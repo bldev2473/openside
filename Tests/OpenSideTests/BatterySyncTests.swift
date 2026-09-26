@@ -60,7 +60,7 @@ final class BatterySyncTests: XCTestCase {
         let testBattery = SidecarBatteryInfo(percentage: 90, state: .full)
         mockReceiver.onBatteryUpdate?(testBattery)
 
-        // MainActor 반영 대기
+        // Wait for MainActor propagation
         try? await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertEqual(viewModel.sidecarBattery?.percentage, 90)
         XCTAssertEqual(viewModel.sidecarBattery?.state, .full)
@@ -79,8 +79,8 @@ final class BatteryLossTests: XCTestCase {
         func estimatedRemaining(currentBattery: Int) -> TimeInterval? { 3600 }
     }
 
-    /// iPad 를 더 이상 읽을 수 없으면 배지와 추정을 함께 비워야 한다.
-    /// 마지막 성공값이 남으면 사용자가 그것을 현재 잔량으로 읽는다.
+    /// When the iPad can no longer be read, both badge and estimate must be cleared.
+    /// Leaving the last successful value causes users to mistake it for the current level.
     @MainActor
     func testLosingTheDeviceClearsBatteryAndEstimate() async {
         let source = ManualBatterySource()
@@ -96,7 +96,7 @@ final class BatteryLossTests: XCTestCase {
 
         source.onBatteryUpdate?(nil)
         try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertNil(viewModel.sidecarBattery, "기기가 사라지면 배지도 사라져야 한다")
-        XCTAssertNil(viewModel.remainingEstimate, "읽을 수 없으면 추정도 의미가 없다")
+        XCTAssertNil(viewModel.sidecarBattery, "Badge must disappear when device is lost")
+        XCTAssertNil(viewModel.remainingEstimate, "Estimate is meaningless if device cannot be read")
     }
 }

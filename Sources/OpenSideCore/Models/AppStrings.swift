@@ -1,6 +1,6 @@
 import Foundation
 
-/// 다국어 지원 UI 텍스트 정의 모델
+/// Localized UI string definitions
 public struct LocalizedUIStrings: Sendable {
     public let disconnect: String
     public let connectDevice: @Sendable (String) -> String
@@ -14,19 +14,19 @@ public struct LocalizedUIStrings: Sendable {
     public let quitOpenSide: String
     public let generalSection: String
     public let launchAtLogin: String
-    /// 등록은 됐지만 시스템 설정에서 켜 줘야 할 때
+    /// When registered but requires user approval in System Settings
     public let launchAtLoginNeedsApproval: String
     public let languagePicker: String
     public let settingsTitle: String
-    /// iPad 배터리 배지 툴팁. 인자는 마지막 갱신 시각 표기
+    /// iPad battery badge tooltip. Argument is formatted last updated timestamp
     public let iPadBatteryTooltip: @Sendable (String) -> String
-    /// 연결 가능한 사이드카 기기를 찾지 못했을 때 안내
+    /// Shown when no connectable Sidecar devices are found
     public let noSidecarDevices: String
-    /// 해상도 행 제목
+    /// Title for the resolution row
     public let resolution: String
-    /// 복제 중 메인 화면 해상도 라벨. 두 화면이 함께 바뀝니다.
+    /// Main display resolution label during mirroring. Both displays change together.
     public let mainResolution: String
-    /// 세션 정보 섹션
+    /// Session info section
     public let sessionInfoSection: String
     public let sessionFramerate: String
     public let sessionBitrate: String
@@ -34,27 +34,27 @@ public struct LocalizedUIStrings: Sendable {
     public let sessionHDR: String
     public let onWord: String
     public let offWord: String
-    /// 확장 표시 모드 라벨
+    /// Extended display mode label
     public let extendDisplay: String
-    /// 메인 화면 복제 모드 라벨
+    /// Mirrored display mode label
     public let mirrorDisplay: String
-    /// 남은 사용 시간 추정. 인자는 시간 표기
+    /// Estimated remaining usage time. Argument is formatted duration string
     public let approximateRemaining: @Sendable (String) -> String
-    /// 기기를 찾지 못한 원인 안내
+    /// Explanation when devices are not found
     public let readinessHint: @Sendable (SidecarReadinessIssue) -> String
-    /// 전제 조건 활성화를 권하는 안내 문구
+    /// Call to action suggesting enabling prerequisites
     public let readinessCallToAction: String
-    /// Sidecar 화면을 찾지 못해 조작을 못 했을 때
+    /// When Sidecar display is not found during an operation
     public let noSidecarDisplayError: String
-    /// 메인 화면을 찾지 못해 조작을 못 했을 때
+    /// When main display is not found during an operation
     public let noMainDisplayError: String
-    /// CoreGraphics 가 화면 구성을 거부했을 때. 인자는 그 오류
+    /// When CoreGraphics rejects display reconfiguration. Argument is the error
     public let displayConfigurationError: @Sendable (DisplayConfigurationError) -> String
     public let presetLabels: @Sendable (DisplayArrangementPreset) -> String
 }
 
 extension AppLanguage {
-    /// 선택된 언어에 따른 UI 텍스트 번들 반환
+    /// Returns the localized string bundle for the selected language
     public var strings: LocalizedUIStrings {
         switch self {
         case .korean:

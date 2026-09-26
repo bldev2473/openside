@@ -1,18 +1,19 @@
 import Foundation
 
-/// 화면을 다루다 실패한 까닭.
+/// Reasons why a display operation failed.
 ///
-/// 뷰 모델은 완성된 문장이 아니라 갈래를 들고, 문장은 화면이 고른 언어로 만듭니다.
-/// 뷰 모델이 한국어 문장을 들고 있으면 언어를 바꿔도 그 줄만 한국어로 남습니다.
+/// The view model holds error cases rather than pre-formatted strings, allowing the view
+/// to construct messages in the selected language. Holding static localized strings in the view model
+/// would leave error messages in the old language when switching languages.
 public enum DisplayOperationFailure: Equatable, Sendable {
-    /// 사이드카 화면을 찾지 못함.
+    /// Could not find Sidecar display
     case noSidecarDisplay
-    /// 메인 화면을 찾지 못함.
+    /// Could not find main display
     case noMainDisplay
-    /// CoreGraphics 가 화면 구성을 거부함.
+    /// CoreGraphics rejected the display configuration
     case configuration(DisplayConfigurationError)
 
-    /// 고른 언어로 읽을 문장.
+    /// Formats the error message for the selected language
     public func message(_ strings: LocalizedUIStrings) -> String {
         switch self {
         case .noSidecarDisplay: return strings.noSidecarDisplayError

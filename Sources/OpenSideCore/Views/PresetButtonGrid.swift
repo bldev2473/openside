@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 디스플레이 원클릭 정렬 프리셋 버튼 그리드 뷰
+/// Grid view containing one-click display arrangement preset buttons.
 public struct PresetButtonGrid: View {
     public let isEnabled: Bool
     public let selectedPreset: DisplayArrangementPreset?
@@ -21,12 +21,12 @@ public struct PresetButtonGrid: View {
 
     public var body: some View {
         VStack(spacing: 8) {
-            // 상단
+            // Top
             HStack {
                 presetButton(preset: .topCenter, icon: "arrow.up")
             }
 
-            // 좌측 / 우측
+            // Left / Right
             HStack(spacing: 8) {
                 VStack(spacing: 6) {
                     presetButton(preset: .leftTop, icon: "arrow.up.left")
@@ -41,7 +41,7 @@ public struct PresetButtonGrid: View {
                 }
             }
 
-            // 하단
+            // Bottom
             HStack {
                 presetButton(preset: .bottomCenter, icon: "arrow.down")
             }

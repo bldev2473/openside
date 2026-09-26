@@ -1,13 +1,13 @@
 import SwiftUI
 import AppKit
 
-/// OpenSide 애플리케이션 수명 주기 및 메뉴바 관리 대리자
+/// OpenSide application lifecycle and menu bar delegate
 @MainActor
 open class OpenSideAppDelegate: NSObject, NSApplicationDelegate, MenuBarMenuHandling {
     private var statusItemManager: StatusItemManager?
     public private(set) lazy var viewModel: DisplayManagerViewModel = makeViewModel()
 
-    /// 뷰모델 생성 지점. 이 라이브러리를 쓰는 앱이 배터리 조회 같은 구현체를 넣으려면 재정의합니다.
+    /// ViewModel factory method. Subclass this if an app using this library needs to inject implementations like battery fetching.
     open func makeViewModel() -> DisplayManagerViewModel {
         DisplayManagerViewModel()
     }
@@ -16,28 +16,28 @@ open class OpenSideAppDelegate: NSObject, NSApplicationDelegate, MenuBarMenuHand
         statusItemManager = StatusItemManager(viewModel: viewModel, menuHandler: self)
     }
 
-    /// '정보' 메뉴 선택 처리: 표준 About 패널 노출
+    /// Handles 'About' menu selection: presents the standard About panel
     public func didSelectAbout() {
         NSApp.activate(ignoringOtherApps: true)
         NSApp.orderFrontStandardAboutPanel(nil)
     }
 
-    /// 설정 창에 담을 뷰. 쓰는 앱이 자체 섹션을 더하려면 재정의합니다.
+    /// The view hosted inside the settings window. Subclass this if an app needs to add custom sections.
     open func makeSettingsView() -> AnyView {
         AnyView(SettingsView(viewModel: viewModel))
     }
 
-    /// '설정' 메뉴 선택 처리: 설정 팝업 창 화면 노출
+    /// Handles 'Settings' menu selection: presents the settings window
     public func didSelectSettings() {
         SettingsWindowController.shared.showSettingsWindow(content: makeSettingsView())
     }
 
-    /// '언어 설정' 메뉴 선택 처리
+    /// Handles 'Language' menu selection
     public func didSelectLanguage(_ language: AppLanguage) {
         UserDefaultsLanguageManager.shared.setLanguage(language)
     }
 
-    /// 'OpenSide 종료' 메뉴 선택 처리
+    /// Handles 'Quit OpenSide' menu selection
     public func didSelectTerminate() {
         NSApp.terminate(nil)
     }

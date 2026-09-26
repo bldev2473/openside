@@ -85,11 +85,11 @@ fastlane/test_output
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# 생성되는 Xcode 프로젝트 (원본은 project.yml, xcodegen generate 로 재생성)
+# Generated Xcode projects (source of truth is project.yml; regenerate with xcodegen generate)
 *.xcodeproj/
 
-# 개발자별 서명 설정 (Team ID 등)
+# Developer-specific signing configurations (Team ID, etc.)
 Local.xcconfig
 
-# 로컬 조사 기록과 릴리스 도구 (공개 배포 대상 아님)
+# Local research records and release tools (not for public distribution)
 docs/

@@ -1,17 +1,17 @@
 import Foundation
 
-/// 메뉴바 우클릭 컨텍스트 메뉴 액션 위임 인터페이스
+/// Delegate interface for menu bar context menu actions
 @MainActor
 public protocol MenuBarMenuHandling: AnyObject, Sendable {
-    /// '정보' 메뉴 선택 시 호출됩니다.
+    /// Invoked when 'About' is selected
     func didSelectAbout()
 
-    /// '설정' 메뉴 선택 시 호출됩니다.
+    /// Invoked when 'Settings' is selected
     func didSelectSettings()
 
-    /// 특정 언어 선택 시 호출됩니다.
+    /// Invoked when a specific language is selected
     func didSelectLanguage(_ language: AppLanguage)
 
-    /// 'OpenSide 종료' 메뉴 선택 시 호출됩니다.
+    /// Invoked when 'Quit OpenSide' is selected
     func didSelectTerminate()
 }

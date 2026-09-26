@@ -1,10 +1,10 @@
 import XCTest
 @testable import OpenSideCore
 
-/// 디스플레이 해상도 모델 및 정렬 로직 단위 테스트 클래스
+/// Unit test class for display resolution model and sorting logic.
 final class ResolutionModeTests: XCTestCase {
 
-    /// 해상도 텍스트 포맷팅 검증 (일반 해상도 vs HiDPI)
+    /// Verifies resolution text formatting (standard vs HiDPI).
     func testResolutionFormatting() {
         let standardMode = DisplayResolutionMode(
             width: 1024,
@@ -30,17 +30,17 @@ final class ResolutionModeTests: XCTestCase {
         XCTAssertTrue(hidpiMode.isCurrent)
     }
 
-    // MARK: - 보여줄 모드 고르기
+    // MARK: - Display Mode Selection
     //
-    // 아래 시험들은 제품 코드를 부릅니다. 예전에는 시험 안에서 직접 sorted 와 filter 를
-    // 돌려 놓고 그 결과를 확인했는데, 그러면 제품 쪽 기준을 바꿔도 초록으로 남았습니다.
+    // The tests below invoke production logic directly. Previously, sorted and filter operations
+    // were duplicated inside test code, causing tests to remain green even if production rules changed.
 
     private func raw(_ w: Int, _ h: Int, px: Int? = nil, py: Int? = nil) -> RawDisplayMode {
         RawDisplayMode(width: w, height: h,
                        pixelWidth: px ?? w, pixelHeight: py ?? h, refreshRate: 60)
     }
 
-    /// 800x600 미만은 쓰기 어려워 목록에서 뺀다. 경계값은 남는다.
+    /// Drops modes below 800x600 floor as unusable; boundary values are preserved.
     func testDropsModesBelowTheUsableFloor() {
         let picked = CoreGraphicsDisplayModeManager.usableModes(
             from: [raw(400, 300), raw(640, 480), raw(800, 600), raw(1024, 768)],
@@ -49,7 +49,7 @@ final class ResolutionModeTests: XCTestCase {
         XCTAssertEqual(picked.map(\.width), [800, 1024])
     }
 
-    /// 가로가 모자란 것도, 세로가 모자란 것도 뺀다.
+    /// Drops modes insufficient on either width or height.
     func testDropsModesShortOnEitherSide() {
         let picked = CoreGraphicsDisplayModeManager.usableModes(
             from: [raw(1024, 500), raw(700, 900), raw(1024, 768)],
@@ -59,7 +59,7 @@ final class ResolutionModeTests: XCTestCase {
         XCTAssertEqual(picked.first?.height, 768)
     }
 
-    /// 논리 해상도가 같으면 하나만 남기고, 픽셀이 많은 쪽(HiDPI)을 고른다.
+    /// Deduplicates identical logical sizes and prefers higher pixel counts (HiDPI).
     func testKeepsOneEntryPerLogicalSizeAndPrefersHiDPI() {
         let picked = CoreGraphicsDisplayModeManager.usableModes(
             from: [raw(1112, 834), raw(1112, 834, px: 2224, py: 1668)],
@@ -70,7 +70,7 @@ final class ResolutionModeTests: XCTestCase {
         XCTAssertTrue(picked[0].isHiDPI)
     }
 
-    /// 지금 쓰는 모드는 픽셀이 적어도 이긴다. 목록에서 현재 값이 사라지면 안 된다.
+    /// Current active mode takes priority even with fewer pixels; active value must not disappear from list.
     func testTheCurrentModeWinsEvenWithFewerPixels() {
         let current = raw(1112, 834)
         let picked = CoreGraphicsDisplayModeManager.usableModes(
@@ -83,7 +83,7 @@ final class ResolutionModeTests: XCTestCase {
         XCTAssertFalse(picked[0].isHiDPI)
     }
 
-    /// 가로 오름차순, 가로가 같으면 세로 오름차순.
+    /// Sorts ascending by width, then ascending by height.
     func testSortsByWidthThenHeight() {
         let picked = CoreGraphicsDisplayModeManager.usableModes(
             from: [raw(1280, 960), raw(800, 600), raw(1112, 834), raw(1280, 1024)],
@@ -93,7 +93,7 @@ final class ResolutionModeTests: XCTestCase {
                        ["800x600", "1112x834", "1280x960", "1280x1024"])
     }
 
-    /// 아무것도 못 고르면 빈 목록. 호출한 쪽이 nil 과 빈 것을 가려 다루지 않아도 되게.
+    /// Returns empty list if no modes qualify, avoiding optional handling at call sites.
     func testReturnsNothingWhenEverythingIsTooSmall() {
         XCTAssertTrue(CoreGraphicsDisplayModeManager.usableModes(
             from: [raw(640, 480), raw(400, 300)], current: nil).isEmpty)

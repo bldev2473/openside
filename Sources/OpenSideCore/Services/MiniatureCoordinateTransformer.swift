@@ -1,7 +1,7 @@
 import Foundation
 import CoreGraphics
 
-/// 미니어처 캔버스 드래그 변위 좌표를 실제 CoreGraphics 글로벌 좌표로 변환하는 변환기 구현체
+/// Coordinate transformer converting miniature canvas drag translations to global CoreGraphics coordinates
 public struct MiniatureCoordinateTransformer: CoordinateTransforming {
     public init() {}
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# assets/logo.svg 와 assets/logo-small.svg 에서 assets/AppIcon.icns 를 만든다.
+# Generates assets/AppIcon.icns from assets/logo.svg and assets/logo-small.svg.
 #
-# 아이콘은 만들어 둔 결과물을 저장소에 넣어 두므로 평소에는 돌릴 일이 없다.
-# 로고를 고쳤을 때만 이 스크립트로 다시 만든다.
+# Generated icon assets are committed to the repository, so running this script is rarely needed.
+# Run only when updating or redesigning the logo.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,29 +15,29 @@ SMALL="assets/logo-small.svg"
 SET="$(mktemp -d)/AppIcon.iconset"
 mkdir -p "${SET}"
 
-# qlmanage 는 출력 이름을 자기가 정하므로, 매번 빈 디렉터리에 뽑아서 옮긴다.
-render() { # $1=svg  $2=크기  $3=결과 이름
+# qlmanage determines output filenames automatically; render to empty temporary directory and move.
+render() { # $1=svg  $2=size  $3=output name
     local tmp
     tmp="$(mktemp -d)"
     qlmanage -t -s "$2" -o "${tmp}" "$1" >/dev/null 2>&1
     local out
     out="$(ls "${tmp}"/*.png 2>/dev/null | head -1)"
     if [ -z "${out}" ]; then
-        echo "❌ ${1} 을 ${2}px 로 그리지 못했다"
+        echo "❌ Failed to render ${1} at ${2}px"
         exit 1
     fi
     sips -z "$2" "$2" "${out}" --out "${SET}/$3" >/dev/null
     rm -rf "${tmp}"
 }
 
-# 16 과 32 는 굵은 변형을 쓴다. 기본 로고를 그 크기로 줄이면 테두리가 0.2px 이 되어 사라진다.
-echo "🎨 작은 크기..."
+# Use bold variant for 16 and 32 sizes. Scaling standard logo causes borders to shrink to 0.2px and vanish.
+echo "🎨 Small sizes..."
 render "${SMALL}" 16   icon_16x16.png
 render "${SMALL}" 32   icon_16x16@2x.png
 render "${SMALL}" 32   icon_32x32.png
 render "${SMALL}" 64   icon_32x32@2x.png
 
-echo "🎨 큰 크기..."
+echo "🎨 Large sizes..."
 render "${BIG}" 128  icon_128x128.png
 render "${BIG}" 256  icon_128x128@2x.png
 render "${BIG}" 256  icon_256x256.png

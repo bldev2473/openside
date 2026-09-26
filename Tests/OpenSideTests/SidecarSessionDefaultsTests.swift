@@ -3,7 +3,7 @@ import XCTest
 
 final class SidecarSessionDefaultsTests: XCTestCase {
 
-    /// 실제 시스템 값을 건드리는 시험이다. 끝나면 원래대로 돌려놓는다.
+    /// This test modifies actual system preferences and restores them upon completion.
     func testWritingIsReadBack() throws {
         let store = SystemSidecarSessionDefaults()
         let originalTouchBar = store.showsTouchBar
@@ -15,7 +15,7 @@ final class SidecarSessionDefaultsTests: XCTestCase {
 
         for value in [true, false] {
             store.setShowsTouchBar(value)
-            XCTAssertEqual(store.showsTouchBar, value, "쓴 값이 그대로 읽혀야 한다")
+            XCTAssertEqual(store.showsTouchBar, value, "The written value should match the value read back")
             store.setShowsSidebar(value)
             XCTAssertEqual(store.showsSidebar, value)
         }

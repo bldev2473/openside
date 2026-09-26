@@ -1,18 +1,18 @@
 import AppKit
 
-/// 메뉴바 아이콘 우클릭 시 표시될 NSMenu를 구성하는 빌더
+/// Builder constructing the NSMenu presented on right-clicking the status item
 public struct StatusItemMenuBuilder: Sendable {
     public init() {}
 
-    /// 제공된 핸들러와 셀렉터를 바인딩하여 우클릭 컨텍스트 메뉴를 생성합니다.
+    /// Builds the right-click context menu bound to provided handlers and selectors.
     /// - Parameters:
-    ///   - target: 메뉴 액션을 수신할 타깃 객체
-    ///   - currentLanguage: 현재 선택된 언어
-    ///   - aboutAction: '정보' 선택 시 호출될 셀렉터
-    ///   - settingsAction: '설정' 선택 시 호출될 셀렉터
-    ///   - languageAction: 서브메뉴 언어 선택 시 호출될 셀렉터
-    ///   - quitAction: 'OpenSide 종료' 선택 시 호출될 셀렉터
-    /// - Returns: 구성된 NSMenu 인스턴스
+    ///   - target: Target object receiving menu actions
+    ///   - currentLanguage: Currently selected language
+    ///   - aboutAction: Selector invoked on selecting 'About'
+    ///   - settingsAction: Selector invoked on selecting 'Settings'
+    ///   - languageAction: Selector invoked on selecting language submenu items
+    ///   - quitAction: Selector invoked on selecting 'Quit OpenSide'
+    /// - Returns: Configured NSMenu instance
     @MainActor
     public func buildMenu(
         target: AnyObject,
@@ -26,19 +26,19 @@ public struct StatusItemMenuBuilder: Sendable {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        // 1. 정보
+        // 1. About
         let aboutItem = NSMenuItem(title: strings.about, action: aboutAction, keyEquivalent: "")
         aboutItem.target = target
         aboutItem.isEnabled = true
         menu.addItem(aboutItem)
 
-        // 2. 설정
+        // 2. Settings
         let settingsItem = NSMenuItem(title: strings.settings, action: settingsAction, keyEquivalent: ",")
         settingsItem.target = target
         settingsItem.isEnabled = true
         menu.addItem(settingsItem)
 
-        // 3. 언어 설정 (우측 서브메뉴: 한국어, 영어, 일본어, 중국어)
+        // 3. Language settings (Submenu: Korean, English, Japanese, Chinese)
         let languageItem = NSMenuItem(title: strings.languageSettings, action: nil, keyEquivalent: "")
         let languageSubmenu = NSMenu(title: strings.languageSettings)
         languageSubmenu.autoenablesItems = false
@@ -59,10 +59,10 @@ public struct StatusItemMenuBuilder: Sendable {
         languageItem.submenu = languageSubmenu
         menu.addItem(languageItem)
 
-        // 구분선
+        // Separator
         menu.addItem(NSMenuItem.separator())
 
-        // 4. OpenSide 종료
+        // 4. Quit OpenSide
         let quitItem = NSMenuItem(title: strings.quitOpenSide, action: quitAction, keyEquivalent: "q")
         quitItem.target = target
         quitItem.isEnabled = true

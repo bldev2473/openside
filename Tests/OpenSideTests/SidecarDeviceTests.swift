@@ -1,14 +1,14 @@
 import XCTest
 @testable import OpenSideCore
 
-/// 사이드카 디바이스 모델 및 관리자 단위 테스트 클래스
+/// Unit test class for Sidecar device model and manager.
 final class SidecarDeviceTests: XCTestCase {
 
-    /// SidecarDeviceInfo 모델 인스턴스화 및 동등성 검증
+    /// Verifies SidecarDeviceInfo instantiation and equality.
     func testSidecarDeviceInfoModel() {
-        let device1 = SidecarDeviceInfo(id: "UUID-123", name: "홍길동의 iPad", isConnected: false)
-        let device2 = SidecarDeviceInfo(id: "UUID-123", name: "홍길동의 iPad", isConnected: false)
-        let device3 = SidecarDeviceInfo(id: "UUID-456", name: "다른 iPad", isConnected: true)
+        let device1 = SidecarDeviceInfo(id: "UUID-123", name: "User's iPad", isConnected: false)
+        let device2 = SidecarDeviceInfo(id: "UUID-123", name: "User's iPad", isConnected: false)
+        let device3 = SidecarDeviceInfo(id: "UUID-456", name: "Other iPad", isConnected: true)
 
         XCTAssertEqual(device1, device2)
         XCTAssertNotEqual(device1, device3)
@@ -16,11 +16,11 @@ final class SidecarDeviceTests: XCTestCase {
         XCTAssertTrue(device3.isConnected)
     }
 
-    /// SidecarDeviceManager 초기화 및 안전성 검증
+    /// Verifies SidecarDeviceManager initialization and safety.
     func testSidecarDeviceManagerInitialization() {
         let manager = SidecarDeviceManager()
         let devices = manager.getAvailableDevices()
-        // 기기가 탐색되거나 빈 배열이어도 예외 없이 안전하게 반환되어야 함
+        // Must safely return devices or empty array without throwing exceptions
         XCTAssertTrue(devices.count >= 0)
     }
 }
@@ -32,7 +32,7 @@ final class SidecarReadinessTests: XCTestCase {
         func currentIssues() -> [SidecarReadinessIssue] { issues }
     }
 
-    /// 사이드카 디스플레이가 붙어 있지 않은 상태를 강제합니다. 실제 시스템 상태에 의존하지 않도록.
+    /// Forces a state with no Sidecar display attached to avoid dependency on actual system state.
     struct StubDetector: DisplayDetecting {
         func getActiveDisplays() -> [DisplayInfo] { [] }
         func getSidecarDisplay() -> DisplayInfo? { nil }
@@ -56,7 +56,7 @@ final class SidecarReadinessTests: XCTestCase {
         )
         XCTAssertEqual(withoutDevice.readinessIssues, [.wifiOff])
 
-        // 목록에 기기가 남아 있어도 전제 조건이 깨졌으면 연결은 실패하므로 알려야 한다
+        // Must report issues because connection will fail if prerequisites are broken even if devices remain listed
         let withDevice = DisplayManagerViewModel(
             detector: StubDetector(),
             sidecarConnector: StubConnector(devices: [
@@ -70,28 +70,28 @@ final class SidecarReadinessTests: XCTestCase {
 
 final class SidecarReadinessSettingsURLTests: XCTestCase {
 
-    /// 존재하지 않는 번들 ID 를 넘겨도 설정 앱은 오류 없이 열리므로, 값이 틀려도 실행 중에는
-    /// 드러나지 않는다. 시스템에 실제로 설치된 확장인지 여기서 검증한다.
+    /// Passing nonexistent bundle IDs still opens System Settings without error, hiding mistakes at runtime.
+    /// Verifies that URLs point to extensions actually installed on the system.
     func testSettingsURLsPointAtInstalledExtensions() throws {
         let extensionsDir = URL(fileURLWithPath: "/System/Library/ExtensionKit/Extensions")
         guard let bundles = try? FileManager.default.contentsOfDirectory(
             at: extensionsDir, includingPropertiesForKeys: nil
         ) else {
-            throw XCTSkip("이 환경에는 System Settings 확장 디렉터리가 없다")
+            throw XCTSkip("System Settings extension directory does not exist in this environment")
         }
 
         let installedIDs = Set(bundles.compactMap { url -> String? in
             Bundle(url: url)?.bundleIdentifier
         })
-        XCTAssertFalse(installedIDs.isEmpty, "설치된 확장을 하나도 읽지 못했다")
+        XCTAssertFalse(installedIDs.isEmpty, "Failed to read any installed extensions")
 
         for issue in SidecarReadinessIssue.allCases {
-            let url = try XCTUnwrap(issue.settingsURL, "\(issue) 에 설정 URL 이 없다")
+            let url = try XCTUnwrap(issue.settingsURL, "Missing settings URL for \(issue)")
             let identifier = url.absoluteString
                 .replacingOccurrences(of: "x-apple.systempreferences:", with: "")
             XCTAssertTrue(
                 installedIDs.contains(identifier),
-                "\(issue) 의 설정 화면 ID 가 실재하지 않는다: \(identifier)"
+                "Settings pane ID does not exist for \(issue): \(identifier)"
             )
         }
     }
@@ -135,8 +135,8 @@ final class CustomArrangementPersistenceTests: XCTestCase {
         func isMirroring(displayID: CGDirectDisplayID) -> Bool { false }
     }
 
-    /// 프리셋을 적용한 뒤 직접 끌어다 놓으면, 저장된 프리셋도 지워져야 한다.
-    /// 메모리만 지우면 앱을 다시 켰을 때 지운 줄 알았던 프리셋이 선택된 채로 살아난다.
+    /// If dragged manually after applying a preset, the stored preset must also be cleared.
+    /// Clearing memory alone would revive the supposedly-cleared preset as active on next launch.
     @MainActor
     func testDraggingClearsTheStoredPreset() {
         let presets = SpyPresetManager()
@@ -150,10 +150,10 @@ final class CustomArrangementPersistenceTests: XCTestCase {
         XCTAssertEqual(presets.stored, .rightCenter)
 
         viewModel.applyCustomOrigin(TargetDisplayOrigin(x: 100, y: 200))
-        XCTAssertNil(viewModel.lastAppliedPreset, "화면에서 선택 표시가 사라져야 한다")
-        XCTAssertNil(presets.stored, "저장소에도 남으면 다음 실행에서 되살아난다")
+        XCTAssertNil(viewModel.lastAppliedPreset, "Selection highlight must disappear from UI")
+        XCTAssertNil(presets.stored, "Leaving in storage revives preset on next launch")
 
-        // 다시 켠 상황을 흉내 낸다.
+        // Simulates app restart.
         let restarted = DisplayManagerViewModel(
             detector: StubDetector(),
             configurator: NoopConfigurator(),
@@ -165,10 +165,10 @@ final class CustomArrangementPersistenceTests: XCTestCase {
 
 final class UserDefaultsPresetManagerTests: XCTestCase {
 
-    /// 대역이 아니라 실제 저장소 구현이 지우는지 확인한다.
+    /// Verifies that the real storage implementation actually clears values rather than a mock.
     func testClearRemovesTheStoredValue() throws {
-        // 이름을 매번 새로 지으면 돌릴 때마다 plist 가 하나씩 남습니다. 한 이름을 쓰고,
-        // 끝날 때 값과 파일을 모두 치웁니다.
+        // Generating random names leaves abandoned plist files on every run.
+        // Use a consistent name and clean up values and file upon teardown.
         let suiteName = TestDefaults.name("PresetStore")
         let defaults = try TestDefaults.open(suiteName)
         defer { TestDefaults.remove(suiteName) }
@@ -179,9 +179,9 @@ final class UserDefaultsPresetManagerTests: XCTestCase {
         XCTAssertEqual(manager.loadLastPreset(), .rightCenter)
 
         manager.clearLastPreset()
-        XCTAssertNil(manager.loadLastPreset(), "저장소에서 실제로 없어져야 한다")
+        XCTAssertNil(manager.loadLastPreset(), "Must be physically removed from storage")
 
-        // 같은 저장소를 새로 열어도 없어야 한다. 앱 재시작에 해당한다.
+        // Must remain absent when opening the same suite anew (corresponds to app restart).
         let reopened = UserDefaultsPresetManager(userDefaults: try XCTUnwrap(UserDefaults(suiteName: suiteName)))
         XCTAssertNil(reopened.loadLastPreset())
     }
@@ -208,7 +208,7 @@ final class DeviceListRefreshTests: XCTestCase {
         func getMainDisplay() -> DisplayInfo? { nil }
     }
 
-    /// 배경에서 자주 부르는 경로다. 기기 목록만 읽고 화면은 건드리지 않아야 한다.
+    /// Frequently invoked background path. Must only query device list without touching displays.
     @MainActor
     func testRefreshingDevicesDoesNotTouchDisplays() {
         let connector = CountingConnector()
@@ -222,7 +222,7 @@ final class DeviceListRefreshTests: XCTestCase {
         viewModel.refreshSidecarDevices()
 
         XCTAssertEqual(viewModel.availableSidecarDevices, [device])
-        XCTAssertEqual(detector.displayCalls, displayCallsAfterInit, "화면 열거를 다시 하지 않는다")
+        XCTAssertEqual(detector.displayCalls, displayCallsAfterInit, "Displays must not be re-enumerated")
     }
 }
 
@@ -252,8 +252,8 @@ final class ConnectFailureTests: XCTestCase {
 
     private static let device = SidecarDeviceInfo(id: "A", name: "iPad", isConnected: false)
 
-    /// 연결 실패는 화면에 안 쓰지만 버리지도 않는다. 자동 연결이 이 표시를 보고
-    /// 같은 기기에 되풀이해서 붙지 않는다.
+    /// Connection failure is not shown on screen but also not discarded.
+    /// Auto-connect inspects this flag to avoid repeatedly connecting to the same failing device.
     @MainActor
     func testFailureIsRecordedAndClearedOnSuccess() async {
         let connector = ScriptedConnector()
@@ -268,15 +268,15 @@ final class ConnectFailureTests: XCTestCase {
         viewModel.connectSidecar(to: Self.device)
         try? await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertEqual(viewModel.lastConnectFailure, Self.device)
-        XCTAssertNil(viewModel.failure, "macOS 가 자체 알림창을 띄우므로 우리는 안 띄운다")
+        XCTAssertNil(viewModel.failure, "macOS presents its own alert, so we do not show one")
 
         connector.fails = false
         viewModel.connectSidecar(to: Self.device)
         try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertNil(viewModel.lastConnectFailure, "성공하면 표시를 지운다")
+        XCTAssertNil(viewModel.lastConnectFailure, "Clears flag upon success")
     }
 
-    /// 자동 연결은 어느 기기에 붙을지를 여기서 배운다. 실패한 기기를 배우면 안 된다.
+    /// Auto-connect learns which device to connect to from this; must not learn failing devices.
     @MainActor
     func testOnlyASuccessfulConnectionIsRemembered() async {
         let connector = ScriptedConnector()
@@ -290,7 +290,7 @@ final class ConnectFailureTests: XCTestCase {
         connector.fails = true
         viewModel.connectSidecar(to: Self.device)
         try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertNil(viewModel.lastConnectedDevice, "붙지 못한 기기는 기억하지 않는다")
+        XCTAssertNil(viewModel.lastConnectedDevice, "Failed devices must not be remembered")
 
         connector.fails = false
         viewModel.connectSidecar(to: Self.device)
@@ -310,11 +310,11 @@ final class ManagedDisplayTests: XCTestCase {
         let main = DisplayInfo(id: 1, uuid: "M", name: "Built-in",
                                bounds: CGRect(x: 0, y: 0, width: 1512, height: 982),
                                isMain: true, isBuiltin: true, isSidecar: false)
-        /// iPad. 캔버스를 복제하는 중이라 크기가 캔버스와 같다.
+        /// iPad mirroring the canvas, matching canvas dimensions.
         let sidecar = DisplayInfo(id: 2, uuid: "S", name: "Sidecar Display (AirPlay)",
                                   bounds: CGRect(x: 0, y: 0, width: 834, height: 1112),
                                   isMain: false, isBuiltin: false, isSidecar: true, mirrorSourceID: 3)
-        /// 우리가 만든 캔버스.
+        /// App-created virtual canvas.
         let canvas = DisplayInfo(id: 3, uuid: "C", name: "OpenSide Canvas",
                                  bounds: CGRect(x: 1512, y: 0, width: 834, height: 1112),
                                  isMain: false, isBuiltin: false, isSidecar: false)
@@ -325,9 +325,9 @@ final class ManagedDisplayTests: XCTestCase {
 
     final class RecordingConfigurator: DisplayConfiguring, @unchecked Sendable {
         var movedIDs: [CGDirectDisplayID] = []
-        /// 옮겨 달라고 받은 좌표들.
+        /// Received target origins to move to.
         var movedOrigins: [TargetDisplayOrigin] = []
-        /// 복제를 걸어 달라고 받은 원본들. nil 은 복제 해제다.
+        /// Received master display IDs for mirroring; nil indicates unmirroring.
         var mirrorRequests: [CGDirectDisplayID?] = []
         func configureDisplayOrigin(displayID: CGDirectDisplayID, origin: TargetDisplayOrigin) -> Result<Void, DisplayConfigurationError> {
             movedIDs.append(displayID); movedOrigins.append(origin); return .success(())
@@ -342,8 +342,8 @@ final class ManagedDisplayTests: XCTestCase {
         func currentIssues() -> [SidecarReadinessIssue] { [] }
     }
 
-    /// 캔버스를 쓰는 동안에는 데스크탑이 확장되는 곳이 캔버스다.
-    /// iPad 를 옮기면 아무 일도 일어나지 않는다.
+    /// While using a canvas, desktop extension occurs on the canvas.
+    /// Moving the iPad has no effect.
     @MainActor
     func testPresetMovesTheCanvasWhenOneIsInUse() {
         let configurator = RecordingConfigurator()
@@ -354,10 +354,10 @@ final class ManagedDisplayTests: XCTestCase {
             managedDisplays: StubManaged(3)
         )
         viewModel.applyPreset(.rightCenter)
-        XCTAssertEqual(configurator.movedIDs, [3], "캔버스(3)를 옮겨야 한다")
+        XCTAssertEqual(configurator.movedIDs, [3], "Must move the canvas (3)")
     }
 
-    /// 캔버스가 없으면 예전처럼 iPad 를 옮긴다.
+    /// Moves iPad as usual when no canvas exists.
     @MainActor
     func testPresetMovesTheSidecarWithoutACanvas() {
         let configurator = RecordingConfigurator()
@@ -368,10 +368,10 @@ final class ManagedDisplayTests: XCTestCase {
             managedDisplays: StubManaged(nil)
         )
         viewModel.applyPreset(.rightCenter)
-        XCTAssertEqual(configurator.movedIDs, [2], "iPad(2)를 옮겨야 한다")
+        XCTAssertEqual(configurator.movedIDs, [2], "Must move iPad (2)")
     }
 
-    /// 캔버스가 떠 있지만 사용자가 확장으로 되돌려 iPad 는 아무것도 복제하지 않는다.
+    /// Canvas exists, but user reverted to extension so iPad mirrors nothing.
     final class UnmirroredCanvasDetector: DisplayDetecting, @unchecked Sendable {
         let main = DisplayInfo(id: 1, uuid: "M", name: "Built-in",
                                bounds: CGRect(x: 0, y: 0, width: 1512, height: 982),
@@ -387,8 +387,8 @@ final class ManagedDisplayTests: XCTestCase {
         func getMainDisplay() -> DisplayInfo? { main }
     }
 
-    /// iPad 가 캔버스를 비추는 것은 사용자가 보기에 확장이다. 데스크탑이 캔버스로 늘어나고
-    /// iPad 는 그 사본을 보여준다. 복제로 표시하면 배치와 해상도 칸이 모두 사라진다.
+    /// iPad mirroring a canvas appears as desktop extension to the user. The desktop extends to the canvas
+    /// and iPad displays a replica. Treating it as mirroring would hide arrangement and resolution controls.
     @MainActor
     func testShowingTheCanvasDoesNotCountAsMirroring() {
         let viewModel = DisplayManagerViewModel(
@@ -397,10 +397,10 @@ final class ManagedDisplayTests: XCTestCase {
             readinessChecker: QuietChecker(),
             managedDisplays: StubManaged(3)
         )
-        XCTAssertFalse(viewModel.isSidecarMirrored, "캔버스를 비추는 것은 확장이다")
+        XCTAssertFalse(viewModel.isSidecarMirrored, "Mirroring a canvas counts as desktop extension")
     }
 
-    /// 사용자가 확장으로 되돌리면 iPad 는 캔버스와 무관해진다. 그때 배치 대상은 iPad 다.
+    /// When user reverts to extension, iPad is unlinked from canvas; iPad becomes the arrangement target.
     @MainActor
     func testPresetMovesTheSidecarOnceItStopsShowingTheCanvas() {
         let configurator = RecordingConfigurator()
@@ -411,10 +411,10 @@ final class ManagedDisplayTests: XCTestCase {
             managedDisplays: StubManaged(3)
         )
         viewModel.applyPreset(.rightCenter)
-        XCTAssertEqual(configurator.movedIDs, [2], "복제를 풀었으면 iPad(2)를 옮겨야 한다")
+        XCTAssertEqual(configurator.movedIDs, [2], "Must move iPad (2) once mirroring is disabled")
     }
 
-    /// iPad 가 메인 화면(1)을 비추는 상태.
+    /// State where iPad is mirroring main display (1).
     final class MainMirrorDetector: DisplayDetecting, @unchecked Sendable {
         let main = DisplayInfo(id: 1, uuid: "M", name: "Built-in",
                                bounds: CGRect(x: 0, y: 0, width: 1512, height: 982),
@@ -430,7 +430,7 @@ final class ManagedDisplayTests: XCTestCase {
         func getMainDisplay() -> DisplayInfo? { main }
     }
 
-    /// 캔버스가 떠 있어도 iPad 가 메인 화면을 비추면 그것은 복제다.
+    /// Even if a canvas exists, iPad mirroring the main screen counts as mirroring.
     @MainActor
     func testMirroringTheMainScreenStillCountsAsMirroring() {
         let viewModel = DisplayManagerViewModel(
@@ -439,11 +439,11 @@ final class ManagedDisplayTests: XCTestCase {
             readinessChecker: QuietChecker(),
             managedDisplays: StubManaged(3)
         )
-        XCTAssertTrue(viewModel.isSidecarMirrored, "메인 화면을 비추면 복제다")
-        XCTAssertFalse(viewModel.isShowingCanvas, "비추는 것은 캔버스가 아니다")
+        XCTAssertTrue(viewModel.isSidecarMirrored, "Mirroring main screen counts as mirroring")
+        XCTAssertFalse(viewModel.isShowingCanvas, "Mirrored target is not canvas")
     }
 
-    /// 해상도 칸을 가릴 근거. 캔버스를 비추는 동안 해상도는 캔버스가 정한다.
+    /// Rationale for resolution control. Canvas determines resolution while mirroring it.
     @MainActor
     func testShowingCanvasIsReportedWhileTheSidecarMirrorsIt() {
         let showing = DisplayManagerViewModel(
@@ -460,11 +460,11 @@ final class ManagedDisplayTests: XCTestCase {
             readinessChecker: QuietChecker(),
             managedDisplays: StubManaged(3)
         )
-        XCTAssertFalse(notShowing.isShowingCanvas, "복제를 풀면 캔버스를 비추는 것이 아니다")
+        XCTAssertFalse(notShowing.isShowingCanvas, "Disabling mirroring means canvas is not mirrored")
     }
 
-    /// 캔버스를 쓰는 동안 복제를 켰다가 확장으로 돌아오면 iPad 를 캔버스로 되돌려야 한다.
-    /// 그냥 복제만 풀면 iPad 가 자기 기본 해상도로 떨어져 설정한 크기가 사라진다.
+    /// When toggling mirroring back to extension while using a canvas, iPad must return to mirroring the canvas.
+    /// Simply unmirroring drops iPad to default resolution and loses custom dimensions.
     @MainActor
     func testReturningToExtendSendsTheSidecarBackToTheCanvas() {
         let configurator = RecordingConfigurator()
@@ -475,10 +475,10 @@ final class ManagedDisplayTests: XCTestCase {
             managedDisplays: StubManaged(3)
         )
         viewModel.toggleMirroring(false)
-        XCTAssertEqual(configurator.mirrorRequests, [3], "확장으로 돌아가면 캔버스(3)를 다시 비춰야 한다")
+        XCTAssertEqual(configurator.mirrorRequests, [3], "Must remirror canvas (3) when returning to extension")
     }
 
-    /// 캔버스가 없으면 확장은 그냥 복제 해제다.
+    /// Extension is simply unmirroring when no canvas exists.
     @MainActor
     func testReturningToExtendWithoutACanvasJustUnmirrors() {
         let configurator = RecordingConfigurator()
@@ -489,10 +489,10 @@ final class ManagedDisplayTests: XCTestCase {
             managedDisplays: StubManaged(nil)
         )
         viewModel.toggleMirroring(false)
-        XCTAssertEqual(configurator.mirrorRequests, [nil], "캔버스가 없으면 복제만 푼다")
+        XCTAssertEqual(configurator.mirrorRequests, [nil], "Simply unmirrors when no canvas exists")
     }
 
-    /// 손으로 끌어 둔 자리에는 저장된 프리셋이 없다. 앵커를 캔버스 크기로 풀어 써야 한다.
+    /// Manually dragged positions have no saved preset; resolves anchor using canvas dimensions.
     @MainActor
     func testCanvasInheritsAHandPlacedSpot() {
         let configurator = RecordingConfigurator()
@@ -504,17 +504,17 @@ final class ManagedDisplayTests: XCTestCase {
             readinessChecker: QuietChecker(),
             managedDisplays: StubManaged(3)
         )
-        // 왼쪽 변 한가운데에 두었던 자리.
+        // Position formerly placed at middle of left edge.
         viewModel.inheritArrangement(from: DisplayAnchor(edge: .left, ratio: 0.5))
 
-        XCTAssertEqual(configurator.movedIDs, [3], "캔버스(3)를 옮겨야 한다")
-        // 캔버스는 834x1112 다. 왼쪽 변에 붙고 중심이 주 화면의 절반 높이에 와야 한다.
+        XCTAssertEqual(configurator.movedIDs, [3], "Must move canvas (3)")
+        // Canvas is 834x1112; must attach to left edge and align center to half the main screen height.
         XCTAssertEqual(configurator.movedOrigins.first?.x, -834)
         XCTAssertEqual(Double(configurator.movedOrigins.first?.y ?? 0) + 1112 / 2, 982 * 0.5, accuracy: 1)
     }
 
-    /// 프리셋이 있으면 캔버스 크기로 다시 계산한다. iPad 와 캔버스의 크기가 다르면
-    /// 좌표만 옮겨서는 프리셋이 뜻하던 자리에서 어긋난다.
+    /// If a preset is saved, recalculates for canvas dimensions.
+    /// Discrepancy between iPad and canvas dimensions causes raw coordinates to misalign preset intent.
     @MainActor
     func testCanvasInheritsTheStoredPresetRatherThanRawCoordinates() {
         let configurator = RecordingConfigurator()
@@ -529,16 +529,16 @@ final class ManagedDisplayTests: XCTestCase {
         )
         viewModel.inheritArrangement(from: DisplayAnchor(edge: .left, ratio: 0.5))
 
-        XCTAssertEqual(configurator.movedIDs, [3], "캔버스(3)를 옮겨야 한다")
+        XCTAssertEqual(configurator.movedIDs, [3], "Must move canvas (3)")
         XCTAssertEqual(configurator.movedOrigins.first?.x, 1512,
-                       "앵커가 왼쪽이어도 프리셋이 오른쪽이면 프리셋을 따라야 한다")
-        XCTAssertEqual(presets.stored, .rightCenter, "이어받기가 프리셋을 지우면 안 된다")
+                       "Must follow preset if right even if anchor was left")
+        XCTAssertEqual(presets.stored, .rightCenter, "Inheritance must not clear stored preset")
     }
 
-    /// 화면 상태가 바뀌는 것을 흉내 낸다. macOS 는 복제를 켜고 끌 때마다 자리를 다시 잡는다.
+    /// Simulates screen state transitions; macOS repositions displays every time mirroring is toggled.
     final class MutableCanvasDetector: DisplayDetecting, @unchecked Sendable {
         var canvasOrigin = CGPoint(x: -2000, y: 120)
-        /// iPad 가 무엇을 비추는지. 3 이면 캔버스, 1 이면 메인.
+        /// What iPad mirrors: 3 for canvas, 1 for main.
         var sidecarMirrorSource: CGDirectDisplayID? = 3
 
         var main: DisplayInfo {
@@ -562,13 +562,13 @@ final class ManagedDisplayTests: XCTestCase {
         func getMainDisplay() -> DisplayInfo? { main }
     }
 
-    /// 캔버스를 손으로 끌어 놓고 복제로 갔다가 확장으로 돌아오면 그 자리로 돌아와야 한다.
-    /// macOS 가 복제를 켜고 끌 때마다 화면 자리를 다시 잡으므로, 우리가 기억했다 되돌려야 한다.
+    /// When returning to extension after manually placing canvas and entering mirroring, it must return to that spot.
+    /// macOS repositions displays every time mirroring toggles, so our code must remember and restore it.
     @MainActor
     func testArrangementSurvivesAMirroringRoundTrip() {
         let configurator = RecordingConfigurator()
         let detector = MutableCanvasDetector()
-        // 프리셋이 비어 있다. 손으로 끌어 둔 자리라는 뜻이다.
+        // Stored preset is nil, indicating a manually dragged position.
         let presets = CustomArrangementPersistenceTests.SpyPresetManager()
         let viewModel = DisplayManagerViewModel(
             detector: detector,
@@ -577,31 +577,31 @@ final class ManagedDisplayTests: XCTestCase {
             readinessChecker: QuietChecker(),
             managedDisplays: StubManaged(3)
         )
-        XCTAssertTrue(viewModel.isShowingCanvas, "먼저 캔버스를 비추는 상태여야 한다")
+        XCTAssertTrue(viewModel.isShowingCanvas, "Must initially mirror canvas")
 
         viewModel.toggleMirroring(true)
 
-        // macOS 가 복제를 켜면서 캔버스를 다른 자리로 밀었다.
+        // macOS moved canvas to another origin upon enabling mirroring.
         detector.sidecarMirrorSource = 1
         detector.canvasOrigin = .zero
         viewModel.refreshDisplays()
 
-        // 되돌리기는 이 호출 안에서 끝나야 한다. 기다렸다 옮기면 그 사이 iPad 에 엉뚱한
-        // 자리가 보인다 (측정: CoreGraphics 는 커밋 즉시 반영한다).
+        // Restoration must complete within this call. Waiting introduces a brief flicker
+        // of misplaced positioning on iPad (CoreGraphics reflects commits immediately).
         viewModel.toggleMirroring(false)
 
-        XCTAssertEqual(configurator.movedIDs, [3], "캔버스(3)를 되돌려야 한다")
+        XCTAssertEqual(configurator.movedIDs, [3], "Must restore canvas (3)")
         XCTAssertEqual(configurator.movedOrigins.first?.x, -1112,
-                       "복제로 가기 전처럼 주 화면 왼쪽에 붙어야 한다")
+                       "Must attach to left of main screen as before mirroring")
     }
 
-    /// 캔버스에 복제를 걸면서 자리도 같이 잡아야 한다. 걸어 두고 나중에 옮기면 그 사이
-    /// iPad 에 macOS 가 정한 자리가 보인다.
+    /// Positioning must be applied simultaneously when configuring canvas mirroring.
+    /// Configuring first and moving later briefly exposes macOS's default position on iPad.
     @MainActor
     func testMirroringOntoACanvasPlacesItAtOnce() {
         let configurator = RecordingConfigurator()
         let detector = MutableCanvasDetector()
-        detector.sidecarMirrorSource = nil  // 아직 아무것도 안 비춘다
+        detector.sidecarMirrorSource = nil  // Not mirroring anything yet
         let viewModel = DisplayManagerViewModel(
             detector: detector,
             configurator: configurator,
@@ -613,7 +613,7 @@ final class ManagedDisplayTests: XCTestCase {
         _ = viewModel.mirrorSidecar(onto: 3, placing: DisplayAnchor(edge: .right, ratio: 0.5))
 
         XCTAssertEqual(configurator.mirrorRequests, [3])
-        XCTAssertEqual(configurator.movedIDs, [3], "복제를 건 그 자리에서 캔버스를 세워야 한다")
-        XCTAssertEqual(configurator.movedOrigins.first?.x, 1512, "주 화면 오른쪽에 붙어야 한다")
+        XCTAssertEqual(configurator.movedIDs, [3], "Must position canvas immediately upon establishing mirroring")
+        XCTAssertEqual(configurator.movedOrigins.first?.x, 1512, "Must attach to right of main screen")
     }
 }

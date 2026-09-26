@@ -1,8 +1,8 @@
 import XCTest
 @testable import OpenSideCore
 
-/// 배터리 수신기는 쓰는 쪽에서 싱글턴으로 들어올 수 있다. 뷰모델이 사라져도 콜백이 남으면
-/// 죽은 클로저가 계속 붙어 있게 된다.
+/// Battery receivers may be injected as singletons. If callbacks remain after view model deallocation,
+/// a dead closure would be retained.
 final class BatteryCallbackCleanupTests: XCTestCase {
 
     final class SpyReceiver: BatteryReceiving, @unchecked Sendable {
@@ -23,11 +23,11 @@ final class BatteryCallbackCleanupTests: XCTestCase {
                 batteryReceiver: receiver
             )
             XCTAssertNotNil(viewModel)
-            XCTAssertNotNil(receiver.onBatteryUpdate, "먼저 콜백이 걸려 있어야 한다")
+            XCTAssertNotNil(receiver.onBatteryUpdate, "Callback should be attached initially")
             viewModel = nil
         }
 
-        XCTAssertTrue(receiver.stopped, "수신을 멈춰야 한다")
-        XCTAssertNil(receiver.onBatteryUpdate, "콜백도 비워야 한다")
+        XCTAssertTrue(receiver.stopped, "Listening should be stopped")
+        XCTAssertNil(receiver.onBatteryUpdate, "Callback should also be cleared")
     }
 }

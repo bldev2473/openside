@@ -1,16 +1,16 @@
 import Foundation
 import Combine
 
-/// 애플리케이션 언어 설정 관리 인터페이스
+/// Application language management interface
 public protocol LanguageManaging: AnyObject, Sendable {
-    /// 현재 선택된 언어
+    /// Currently selected language
     var currentLanguage: AppLanguage { get }
 
-    /// 언어 변경 및 저장
+    /// Sets and persists language
     func setLanguage(_ language: AppLanguage)
 }
 
-/// UserDefaults 기반 언어 설정 영속화 구현체
+/// UserDefaults-backed language preference manager implementation
 public final class UserDefaultsLanguageManager: ObservableObject, LanguageManaging, @unchecked Sendable {
     public static let shared = UserDefaultsLanguageManager()
 
@@ -19,7 +19,7 @@ public final class UserDefaultsLanguageManager: ObservableObject, LanguageManagi
 
     @Published public private(set) var currentLanguage: AppLanguage
 
-    /// - Parameter preferredLanguages: 맥이 선호하는 언어 목록. 고른 적이 없을 때만 봅니다.
+    /// - Parameter preferredLanguages: List of languages preferred by the Mac. Checked only when no explicit choice has been saved.
     public init(
         userDefaults: UserDefaults = .standard,
         preferredLanguages: [String] = Locale.preferredLanguages
@@ -29,13 +29,13 @@ public final class UserDefaultsLanguageManager: ObservableObject, LanguageManagi
            let language = AppLanguage(rawValue: savedCode) {
             self.currentLanguage = language
         } else {
-            // 고른 적이 없으면 맥의 언어를 따릅니다. 한국어로 못 박아 두면 영어를 쓰는
-            // 맥에서 처음 켤 때 읽지 못하는 메뉴가 뜹니다.
+            // When no choice is saved, match against system preferences. Hardcoding Korean
+            // causes English Mac systems to show unreadable menus on first launch.
             self.currentLanguage = AppLanguage.matching(preferredLanguages)
         }
     }
 
-    /// 언어 변경 및 설정값 저장
+    /// Sets language and saves preference
     public func setLanguage(_ language: AppLanguage) {
         self.currentLanguage = language
         userDefaults.set(language.rawValue, forKey: storageKey)

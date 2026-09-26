@@ -9,7 +9,7 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        // 다른 앱이 의존할 수 있도록 코어를 라이브러리로 노출
+        // Expose core as a library so other apps can depend on it
         .library(
             name: "OpenSideCore",
             targets: ["OpenSideCore"]

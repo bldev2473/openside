@@ -1,22 +1,21 @@
 import Foundation
 
-/// 지금 돌고 있는 사이드카 세션의 지표.
+/// Metrics for the currently running Sidecar session.
 ///
-/// `SidecarDisplayConfig` 가 22개 값을 들고 있지만 뜻이 분명한 것만 담습니다.
-/// `transport`, `dataLink`, `cipher`, `tilesPerFrame` 은 숫자만 있고 의미를 확인할
-/// 방법이 없어 뺐습니다. 숫자를 보고 짐작해 이름을 붙이면 macOS 가 값을 바꿀 때
-/// 조용히 틀린 설명을 하게 됩니다.
+/// While `SidecarDisplayConfig` carries 22 values, only those with unambiguous semantics are included.
+/// `transport`, `dataLink`, `cipher`, and `tilesPerFrame` contain only raw numbers without documented semantics.
+/// Guessing names from numbers risks displaying silently incorrect descriptions if macOS changes internal representations.
 public struct SidecarSessionInfo: Equatable, Sendable {
-    /// 초당 프레임 수.
+    /// Frames per second.
     public let framerate: Int
-    /// 전송률 하한(bit/s).
+    /// Minimum bitrate bound (bit/s).
     public let minimumBitrate: Int
-    /// 전송률 상한(bit/s).
+    /// Maximum bitrate bound (bit/s).
     public let maximumBitrate: Int
-    /// 세션이 쓰는 논리 크기.
+    /// Logical width used by the session.
     public let width: Int
     public let height: Int
-    /// 픽셀 배율. 2 면 HiDPI 입니다.
+    /// Pixel scale factor (2 for HiDPI).
     public let scale: Int
     public let isHDR: Bool
 
@@ -33,14 +32,14 @@ public struct SidecarSessionInfo: Equatable, Sendable {
         self.isHDR = isHDR
     }
 
-    /// "20 – 40 Mbps" 처럼 읽히는 전송률.
+    /// Bitrate formatted as "20 – 40 Mbps".
     public var bitrateText: String {
         let lower = minimumBitrate / 1_000_000
         let upper = maximumBitrate / 1_000_000
         return lower == upper ? "\(upper) Mbps" : "\(lower) – \(upper) Mbps"
     }
 
-    /// "1,112 × 834 (2배)" 처럼 읽히는 크기.
+    /// Dimensions formatted as "1,112 × 834 (2×)".
     public var sizeText: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal

@@ -1,14 +1,14 @@
 import XCTest
 @testable import OpenSideCore
 
-/// 로그인 항목 토글은 시스템에 실제로 등록된 상태를 따라야 한다.
-/// 저장해 둔 값을 켜 두면, 등록이 실패했거나 사용자가 시스템 설정에서 꺼도 켜진 채로 남는다.
+/// Login item toggle must track the state actually registered with the system.
+/// If relying on a cached storage value, it would remain enabled even if registration failed or user disabled it in System Settings.
 final class LoginItemTests: XCTestCase {
 
     final class StubService: LoginItemManaging, @unchecked Sendable {
         var current: LoginItemState
         var failWith: Error?
-        /// 켠 뒤에 어떤 상태가 되는지. macOS 는 승인 대기로 두기도 한다.
+        /// State assumed after enabling (macOS may place it in needsApproval).
         var stateAfterEnabling: LoginItemState = .on
         var calls: [Bool] = []
         init(enabled: Bool) { self.current = enabled ? .on : .off }
@@ -22,7 +22,7 @@ final class LoginItemTests: XCTestCase {
     }
 
     struct Refused: LocalizedError {
-        var errorDescription: String? { "등록을 거부당함" }
+        var errorDescription: String? { "Registration refused" }
     }
 
     @MainActor
@@ -50,7 +50,7 @@ final class LoginItemTests: XCTestCase {
         XCTAssertFalse(toggle.isOn)
     }
 
-    /// 실패하면 켜진 척하지 않는다. 그 자리에서 되돌아오고 이유를 남긴다.
+    /// Does not pretend to be enabled if registration fails. Reverts immediately and preserves error reason.
     @MainActor
     func testAFailedRegistrationLeavesTheToggleOff() {
         let service = StubService(enabled: false)
@@ -59,11 +59,11 @@ final class LoginItemTests: XCTestCase {
 
         toggle.set(true)
 
-        XCTAssertFalse(toggle.isOn, "등록이 안 됐으면 켜져 있으면 안 된다")
-        XCTAssertEqual(toggle.failure, "등록을 거부당함")
+        XCTAssertFalse(toggle.isOn, "Must not stay enabled if registration failed")
+        XCTAssertEqual(toggle.failure, "Registration refused")
     }
 
-    /// 시스템 설정에서 꺼 버린 경우. 창을 다시 열면 따라가야 한다.
+    /// If disabled via System Settings, must synchronize when settings window is refreshed.
     @MainActor
     func testFollowsAChangeMadeOutsideTheApp() {
         let service = StubService(enabled: true)
@@ -76,8 +76,8 @@ final class LoginItemTests: XCTestCase {
         XCTAssertFalse(toggle.isOn)
     }
 
-    /// macOS 는 등록을 받아들이고도 사용자가 시스템 설정에서 켜 줄 때까지 기다린다.
-    /// 그때 오류는 없다. 칸만 꺼 두면 왜 안 되는지 알 길이 없다.
+    /// macOS may accept registration but wait for user approval in System Settings.
+    /// No error occurs in this state; turning the toggle off without explanation would leave users confused.
     @MainActor
     func testApprovalPendingKeepsTheToggleOnAndSaysWhy() {
         let service = StubService(enabled: false)
@@ -86,12 +86,12 @@ final class LoginItemTests: XCTestCase {
 
         toggle.set(true)
 
-        XCTAssertTrue(toggle.isOn, "등록은 됐으므로 켜진 채로 둔다")
+        XCTAssertTrue(toggle.isOn, "Registration succeeded, so keep toggle enabled")
         XCTAssertTrue(toggle.needsApproval)
-        XCTAssertNil(toggle.failure, "오류가 난 것이 아니다")
+        XCTAssertNil(toggle.failure, "Not an error")
     }
 
-    /// 승인까지 끝나면 안내가 사라진다.
+    /// Approval notice dismisses once approved.
     @MainActor
     func testTheApprovalNoticeGoesAwayOnceApproved() {
         let service = StubService(enabled: false)
@@ -107,7 +107,7 @@ final class LoginItemTests: XCTestCase {
         XCTAssertFalse(toggle.needsApproval)
     }
 
-    /// 성공한 뒤에는 남아 있던 실패 표시를 지운다.
+    /// Clears any preceding failure notice upon successful registration.
     @MainActor
     func testClearsAnEarlierFailure() {
         let service = StubService(enabled: false)
